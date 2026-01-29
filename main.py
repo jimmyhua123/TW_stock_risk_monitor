@@ -6,6 +6,7 @@
 """
 
 import sys
+import os
 import argparse
 from datetime import datetime, timedelta
 from openpyxl import Workbook
@@ -83,9 +84,16 @@ class IntegratedRiskReport:
         # 生成詳細數據表
         self._create_detail_sheet(ws_detail)
         
+        # 確保 monitor_xlsx 目錄存在
+        output_dir = 'monitor_xlsx'
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 組合完整輸出路徑
+        output_path = os.path.join(output_dir, filename)
+        
         # 儲存檔案
-        wb.save(filename)
-        print(f"[SUCCESS] Excel 報表已儲存至: {filename}\n")
+        wb.save(output_path)
+        print(f"[SUCCESS] Excel 報表已儲存至: {output_path}\n")
     
     def _create_summary_sheet(self, ws):
         """創建總覽工作表"""
