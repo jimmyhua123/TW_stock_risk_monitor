@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 台灣股市風險監控 - 主整合程式
-整合單日數據與歷史統計，輸出 Excel 報表
+整合單日數據、歷史統計與個股籌碼監控，輸出 Excel 報表
 """
 
 import sys
@@ -16,15 +16,18 @@ from openpyxl.utils import get_column_letter
 # 匯入現有模組
 from risk_monitor import RiskMonitor, get_trading_date
 from risk_monitor_history import HistoricalDataFetcher
+from stock_monitor import StockMonitor
 
 
 class IntegratedRiskReport:
     """整合風險報告生成器"""
     
-    def __init__(self, date_str: str):
+    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json'):
         self.date_str = date_str
+        self.watchlist_path = watchlist_path
         self.single_day_data = {}
         self.history_data = {}
+        self.stock_data = {}  # 個股籌碼資料
     
     def fetch_all_data(self):
         """抓取所有數據（單日 + 歷史統計）"""
@@ -63,6 +66,19 @@ class IntegratedRiskReport:
             'futures': futures_hist
         }
         
+        # 3. 抓取個股籌碼資料
+        print("\n" + "=" * 60)
+        print(" 第三階段：個股籌碼監控")
+        print("=" * 60)
+        try:
+            stock_monitor = StockMonitor(self.date_str, self.watchlist_path)
+            stock_monitor.load_watchlist()
+            stock_monitor.fetch_all_data()
+            self.stock_data = stock_monitor.stock_data
+        except Exception as e:
+            print(f"[WARNING] 個股籌碼抓取失敗: {e}")
+            self.stock_data = {}
+        
         print("\n[SUCCESS] 所有數據抓取完成！\n")
     
     def export_to_excel(self, filename: str = 'risk_report.xlsx'):
@@ -77,12 +93,16 @@ class IntegratedRiskReport:
         # 創建工作表
         ws_summary = wb.create_sheet("總覽", 0)
         ws_detail = wb.create_sheet("詳細數據", 1)
+        ws_stock = wb.create_sheet("個股籌碼", 2)
         
         # 生成總覽表
         self._create_summary_sheet(ws_summary)
         
         # 生成詳細數據表
         self._create_detail_sheet(ws_detail)
+        
+        # 生成個股籌碼表
+        self._create_stock_sheet(ws_stock)
         
         # 確保 monitor_xlsx 目錄存在
         output_dir = 'monitor_xlsx'
@@ -228,6 +248,109 @@ class IntegratedRiskReport:
         # 調整欄寬
         ws.column_dimensions['A'].width = 30
         ws.column_dimensions['B'].width = 20
+    
+    def _create_stock_sheet(self, ws):
+        """創建個股籌碼監控工作表"""
+        # 標題
+        ws['A1'] = f"個股籌碼監控報告 - {self.date_str}"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws.merge_cells('A1:O1')
+        ws['A1'].alignment = Alignment(horizontal='center')
+        
+        if not self.stock_data:
+            ws['A3'] = "無個股籌碼資料（請確認 watchlist.json 存在）"
+            return
+        
+        # 表頭
+        headers = [
+            '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
+            '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
+            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價'
+        ]
+        
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+        
+        # 資料行
+        row = 4
+        for code, data in self.stock_data.items():
+            # 計算籌碼評價
+            chips_score = self._evaluate_chips(data)
+            
+            ws.cell(row, 1, data.get('code', ''))
+            ws.cell(row, 2, data.get('name', ''))
+            ws.cell(row, 3, data.get('close'))
+            ws.cell(row, 4, data.get('pct_change'))
+            ws.cell(row, 5, data.get('volume'))
+            ws.cell(row, 6, data.get('foreign_daily'))
+            ws.cell(row, 7, data.get('foreign_5d_sum'))
+            ws.cell(row, 8, data.get('trust_daily'))
+            ws.cell(row, 9, data.get('trust_5d_sum'))
+            ws.cell(row, 10, data.get('dealer_daily'))
+            ws.cell(row, 11, data.get('margin_daily_change'))
+            ws.cell(row, 12, data.get('margin_5d_sum'))
+            ws.cell(row, 13, data.get('lending_daily_change'))
+            ws.cell(row, 14, data.get('dist_ma20'))
+            ws.cell(row, 15, chips_score)
+            
+            # 條件格式 - 外資買超綠色，賣超紅色
+            if data.get('foreign_daily') and data['foreign_daily'] > 0:
+                ws.cell(row, 6).font = Font(color="008000")
+            elif data.get('foreign_daily') and data['foreign_daily'] < 0:
+                ws.cell(row, 6).font = Font(color="FF0000")
+            
+            # 漲跌幅顏色
+            if data.get('pct_change') and data['pct_change'] > 0:
+                ws.cell(row, 4).font = Font(color="FF0000")
+            elif data.get('pct_change') and data['pct_change'] < 0:
+                ws.cell(row, 4).font = Font(color="008000")
+            
+            row += 1
+        
+        # 調整欄寬
+        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 14]
+        for i, width in enumerate(col_widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+    
+    def _evaluate_chips(self, data: dict) -> str:
+        """評估籌碼面"""
+        score = 0
+        
+        # 外資連續買
+        if data.get('foreign_5d_sum') and data['foreign_5d_sum'] > 0:
+            score += 2
+        elif data.get('foreign_5d_sum') and data['foreign_5d_sum'] < 0:
+            score -= 2
+        
+        # 投信連續買
+        if data.get('trust_5d_sum') and data['trust_5d_sum'] > 0:
+            score += 1
+        elif data.get('trust_5d_sum') and data['trust_5d_sum'] < 0:
+            score -= 1
+        
+        # 融資減少 (籌碼乾淨)
+        if data.get('margin_5d_sum') and data['margin_5d_sum'] < 0:
+            score += 1
+        elif data.get('margin_5d_sum') and data['margin_5d_sum'] > 0:
+            score -= 1
+        
+        # 評價
+        if score >= 3:
+            return "主力積極買進"
+        elif score >= 1:
+            return "偏多"
+        elif score <= -3:
+            return "主力積極賣出"
+        elif score <= -1:
+            return "偏空"
+        else:
+            return "中性"
 
 
 def main():
