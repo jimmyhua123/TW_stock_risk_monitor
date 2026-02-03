@@ -3,30 +3,56 @@
 """
 黃金監控系統 (Gold Monitor)
 監控黃金期貨、現貨、台股黃金ETF，提供槓桿ETF持倉切換建議
+
+資料來源：
+- GC=F: COMEX黃金期貨 (Yahoo Finance)
+- XAUUSD=X: 黃金現貨美元價格 (Yahoo Finance)
+- 00708L.TW: 元大S&P黃金正2 ETF (Yahoo Finance 台股)
+- 00635U.TW: 元大S&P黃金 ETF (Yahoo Finance 台股)
+- TWD=X: 美元兌台幣匯率 (Yahoo Finance)
+- DX-Y.NYB: 美元指數 DXY (Yahoo Finance)
 """
 
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
+import argparse
+import os
 import warnings
 warnings.filterwarnings('ignore')
+
+# 定義輸出目錄
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gold')
 
 
 class GoldMonitor:
     """黃金市場監控與分析系統"""
     
-    def __init__(self):
-        """初始化監控標的"""
+    def __init__(self, target_date: str = None):
+        """
+        初始化監控標的
+        
+        Args:
+            target_date: 指定日期，格式 YYYY-MM-DD，預設為今天
+        """
         self.symbols = {
-            'GC=F': 'COMEX黃金期貨',
-            'XAUUSD=X': '黃金現貨(美元)',
-            '00708L.TW': '元大S&P黃金正2',
-            '00635U.TW': '元大S&P黃金',
-            'TWD=X': '美元/台幣',
-            'DX-Y.NYB': '美元指數'
+            'GC=F': 'COMEX黃金期貨',          # 資料來源: COMEX via Yahoo Finance
+            'XAUUSD=X': '黃金現貨(美元)',      # 資料來源: Forex via Yahoo Finance
+            '00708L.TW': '元大S&P黃金正2',    # 資料來源: 台灣證交所 via Yahoo Finance
+            '00635U.TW': '元大S&P黃金',       # 資料來源: 台灣證交所 via Yahoo Finance
+            'TWD=X': '美元/台幣',              # 資料來源: Forex via Yahoo Finance
+            'DX-Y.NYB': '美元指數'             # 資料來源: ICE via Yahoo Finance
         }
         self.data = {}
         self.market_data = {}
+        
+        # 設定目標日期
+        if target_date:
+            self.target_date = datetime.strptime(target_date, '%Y-%m-%d')
+        else:
+            self.target_date = datetime.now()
+        
+        self.report_time = self.target_date.strftime('%Y-%m-%d %H:%M:%S')
     
     def fetch_data(self):
         """抓取所有標的即時數據"""
@@ -206,7 +232,8 @@ class GoldMonitor:
         
         report = []
         report.append("# 🏅 黃金市場監控報告")
-        report.append(f"\n**報告時間**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        report.append(f"\n**報告時間**: {self.report_time}\n")
+        report.append(f"**資料日期**: {self.target_date.strftime('%Y-%m-%d')}\n")
         
         # 即時價格表格
         report.append("## 📊 即時價格與漲跌幅\n")
@@ -264,8 +291,12 @@ class GoldMonitor:
         
         markdown_text = "\n".join(report)
         
-        # 輸出到文件
-        output_file = f"gold_monitor_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        # 確保輸出目錄存在
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        
+        # 輸出到文件 (gold/ 目錄下)
+        output_filename = f"gold_monitor_report_{self.target_date.strftime('%Y%m%d_%H%M%S')}.md"
+        output_file = os.path.join(OUTPUT_DIR, output_filename)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(markdown_text)
         
@@ -294,7 +325,34 @@ class GoldMonitor:
 
 def main():
     """主程式入口"""
-    monitor = GoldMonitor()
+    parser = argparse.ArgumentParser(
+        description='黃金市場監控系統 - 監控黃金期貨、現貨、台股ETF',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+資料來源說明:
+  - GC=F        COMEX黃金期貨 (紐約商品交易所)
+  - XAUUSD=X    黃金現貨美元價格 (外匯市場)
+  - 00708L.TW   元大S&P黃金正2 ETF (台灣證交所)
+  - 00635U.TW   元大S&P黃金 ETF (台灣證交所)
+  - TWD=X       美元兌台幣匯率 (外匯市場)
+  - DX-Y.NYB    美元指數 DXY (洲際交易所 ICE)
+
+範例:
+  python gold_monitor.py                    # 使用今天日期
+  python gold_monitor.py -d 2026-01-28      # 指定日期
+  python gold_monitor.py --date 2026-01-28  # 指定日期
+        """
+    )
+    parser.add_argument(
+        '-d', '--date',
+        type=str,
+        default=None,
+        help='指定報告日期，格式: YYYY-MM-DD (預設為今天)'
+    )
+    
+    args = parser.parse_args()
+    
+    monitor = GoldMonitor(target_date=args.date)
     monitor.run()
 
 
