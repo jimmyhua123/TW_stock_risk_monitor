@@ -22,9 +22,10 @@ from stock_monitor import StockMonitor
 class IntegratedRiskReport:
     """整合風險報告生成器"""
     
-    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json'):
+    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json', finmind_token: str = None):
         self.date_str = date_str
         self.watchlist_path = watchlist_path
+        self.finmind_token = finmind_token
         self.single_day_data = {}
         self.history_data = {}
         self.stock_data = {}  # 個股籌碼資料
@@ -71,7 +72,7 @@ class IntegratedRiskReport:
         print(" 第三階段：個股籌碼監控")
         print("=" * 60)
         try:
-            stock_monitor = StockMonitor(self.date_str, self.watchlist_path)
+            stock_monitor = StockMonitor(self.date_str, self.watchlist_path, self.finmind_token)
             stock_monitor.load_watchlist()
             stock_monitor.fetch_all_data()
             self.stock_data = stock_monitor.stock_data
@@ -261,11 +262,12 @@ class IntegratedRiskReport:
             ws['A3'] = "無個股籌碼資料（請確認 watchlist.json 存在）"
             return
         
-        # 表頭
+        # 表頭 (包含進階籌碼指標)
         headers = [
             '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價'
+            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價',
+            '買賣券商差', '籌碼集中度5D(%)', '借券賣出餘額', '短回補天數', 'VWAP20D', 'VWAP乖離(%)', '資料來源'
         ]
         
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -299,6 +301,15 @@ class IntegratedRiskReport:
             ws.cell(row, 14, data.get('dist_ma20'))
             ws.cell(row, 15, chips_score)
             
+            # 進階籌碼指標
+            ws.cell(row, 16, data.get('broker_buy_sell_diff'))
+            ws.cell(row, 17, data.get('chip_concentration_5d'))
+            ws.cell(row, 18, data.get('sbl_sell_balance'))
+            ws.cell(row, 19, data.get('short_cover_days'))
+            ws.cell(row, 20, data.get('vwap_20d_approx'))
+            ws.cell(row, 21, data.get('vwap_bias'))
+            ws.cell(row, 22, data.get('data_source', 'N/A'))
+            
             # 條件格式 - 外資買超綠色，賣超紅色
             if data.get('foreign_daily') and data['foreign_daily'] > 0:
                 ws.cell(row, 6).font = Font(color="008000")
@@ -311,10 +322,17 @@ class IntegratedRiskReport:
             elif data.get('pct_change') and data['pct_change'] < 0:
                 ws.cell(row, 4).font = Font(color="008000")
             
+            # 籌碼集中度顏色
+            if data.get('chip_concentration_5d'):
+                if data['chip_concentration_5d'] > 0:
+                    ws.cell(row, 17).font = Font(color="008000")
+                elif data['chip_concentration_5d'] < 0:
+                    ws.cell(row, 17).font = Font(color="FF0000")
+            
             row += 1
         
-        # 調整欄寬
-        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 14]
+        # 調整欄寬 (含進階指標欄位)
+        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 14, 12, 14, 14, 12, 10, 12, 10]
         for i, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
     
@@ -381,6 +399,13 @@ def main():
         help='Excel 輸出檔名（預設: risk_report.xlsx）'
     )
     
+    parser.add_argument(
+        '--token',
+        type=str,
+        default=None,
+        help='FinMind API token (用於抓取分點資料)'
+    )
+    
     args = parser.parse_args()
     
     # 取得交易日期
@@ -391,7 +416,7 @@ def main():
     
     # 執行整合報告生成
     try:
-        report = IntegratedRiskReport(trading_date)
+        report = IntegratedRiskReport(trading_date, finmind_token=args.token)
         report.fetch_all_data()
         report.export_to_excel(args.output)
         

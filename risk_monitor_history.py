@@ -84,7 +84,7 @@ class HistoricalDataFetcher:
                                 history['total'].append(net_amount)
                 
                 if i < len(trading_days) - 1:
-                    time.sleep(0.3)
+                    time.sleep(1.5)  # TWSE API 限制
                     
             except Exception as e:
                 print(f"[WARNING] 抓取 {date} 數據失敗: {e}")
@@ -118,7 +118,7 @@ class HistoricalDataFetcher:
                     margin_changes.append(margin_change)
                 
                 if i < len(trading_days) - 1:
-                    time.sleep(0.3)
+                    time.sleep(1.5)  # TWSE API 限制
                     
             except Exception as e:
                 print(f"[WARNING] 抓取 {date} 融資數據失敗: {e}")
@@ -158,7 +158,7 @@ class HistoricalDataFetcher:
                         break
                 
                 if i < len(trading_days) - 1:
-                    time.sleep(0.3)
+                    time.sleep(1.5)  # TWSE API 限制
                     
             except Exception as e:
                 print(f"[WARNING] 抓取 {date} P/C Ratio 失敗: {e}")
@@ -210,7 +210,7 @@ class HistoricalDataFetcher:
                         break
                 
                 if i < len(trading_days) - 1:
-                    time.sleep(0.3)
+                    time.sleep(1.5)  # TWSE API 限制
                     
             except Exception as e:
                 print(f"[WARNING] 抓取 {date} 期貨淨部位失敗: {e}")
