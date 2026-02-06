@@ -22,10 +22,9 @@ from stock_monitor import StockMonitor
 class IntegratedRiskReport:
     """整合風險報告生成器"""
     
-    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json', finmind_token: str = None):
+    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json'):
         self.date_str = date_str
         self.watchlist_path = watchlist_path
-        self.finmind_token = finmind_token
         self.single_day_data = {}
         self.history_data = {}
         self.stock_data = {}  # 個股籌碼資料
@@ -72,7 +71,7 @@ class IntegratedRiskReport:
         print(" 第三階段：個股籌碼監控")
         print("=" * 60)
         try:
-            stock_monitor = StockMonitor(self.date_str, self.watchlist_path, self.finmind_token)
+            stock_monitor = StockMonitor(self.date_str, self.watchlist_path)
             stock_monitor.load_watchlist()
             stock_monitor.fetch_all_data()
             self.stock_data = stock_monitor.stock_data
@@ -399,12 +398,7 @@ def main():
         help='Excel 輸出檔名（預設: risk_report.xlsx）'
     )
     
-    parser.add_argument(
-        '--token',
-        type=str,
-        default=None,
-        help='FinMind API token (用於抓取分點資料)'
-    )
+
     
     args = parser.parse_args()
     
@@ -416,7 +410,7 @@ def main():
     
     # 執行整合報告生成
     try:
-        report = IntegratedRiskReport(trading_date, finmind_token=args.token)
+        report = IntegratedRiskReport(trading_date)
         report.fetch_all_data()
         report.export_to_excel(args.output)
         

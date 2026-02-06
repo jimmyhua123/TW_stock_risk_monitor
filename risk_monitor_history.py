@@ -133,39 +133,56 @@ class HistoricalDataFetcher:
         }
     
     def fetch_pc_ratio_history(self, num_days: int = 5) -> Dict[str, Any]:
-        """抓取多日 P/C Ratio 並計算統計值"""
-        # 5 日數據使用較小的緩衝天數
-        trading_days = get_previous_trading_days(self.date_str, num_days, buffer_days=5)
-        pc_ratios = []
+        """
+        抓取多日 P/C Ratio 並計算統計值 (透過 CSV 下載取得多日數據)
+        """
+        print(f"[INFO] 正在下載 P/C Ratio 歷史數據 (CSV)...")
         
-        print(f"[INFO] 抓取過去 {num_days} 個交易日的 P/C Ratio（含緩衝：共嘗試 {len(trading_days)} 天）...")
-        
-        for i, date in enumerate(trading_days):
-            try:
-                formatted_date = f"{date[:4]}/{date[4:6]}/{date[6:]}"
-                url = f"{self.TAIFEX_BASE_URL}/cht/3/pcRatio"
-                params = {'queryDate': formatted_date}
-                
-                response = requests.get(url, params=params, timeout=10)
-                response.raise_for_status()
-                
-                tables = pd.read_html(StringIO(response.text))
-                
-                for table in tables:
-                    if '買賣權未平倉量比率%' in table.columns:
-                        pc_value = table['買賣權未平倉量比率%'].iloc[0]
-                        pc_ratios.append(float(str(pc_value).replace('%', '').replace(',', '')))
-                        break
-                
-                if i < len(trading_days) - 1:
-                    time.sleep(1.5)  # TWSE API 限制
-                    
-            except Exception as e:
-                print(f"[WARNING] 抓取 {date} P/C Ratio 失敗: {e}")
-                continue
-        
-        print(f"[INFO] 成功抓取 {len(pc_ratios)} 筆 P/C Ratio 數據")
-        return {'pc_5d_avg': self._calc_avg(pc_ratios, 5)}
+        try:
+            # 直接下載歷史 CSV (通常包含最近30日數據)
+            url = f"{self.TAIFEX_BASE_URL}/cht/3/pcRatioDown"
+            formatted_date = f"{self.date_str[:4]}/{self.date_str[4:6]}/{self.date_str[6:]}"
+            params = {'queryDate': formatted_date}
+            
+            response = requests.post(url, data=params, timeout=10)
+            response.raise_for_status()
+            
+            # 解析 CSV (忽略 header，手動處理行)
+            # CSV 格式: 日期,賣權量,買賣權量,買賣權量比率%,賣權未平倉量,買賣權未平倉量,買賣權未平倉量比率%
+            # P/C Ratio 在最後一欄 (index 6)
+            lines = response.text.strip().split('\n')
+            
+            if len(lines) < 2:
+                print("[WARNING] P/C Ratio CSV 數據不足")
+                return {'pc_5d_avg': None}
+            
+            pc_ratios = []
+            target_date_int = int(self.date_str)
+            
+            # 跳過 header (第一行)
+            for line in lines[1:]:
+                parts = line.strip().split(',')
+                if len(parts) >= 7:
+                    # 第一欄是日期 (YYYY/MM/DD)
+                    date_str = parts[0].replace('/', '')
+                    try:
+                        if int(date_str) <= target_date_int:
+                            # 最後一欄是 P/C Ratio %
+                            pc_value = float(parts[6])
+                            pc_ratios.append(pc_value)
+                            
+                            if len(pc_ratios) >= num_days:
+                                break
+                    except:
+                        continue
+            
+            print(f"[INFO] 成功取得 {len(pc_ratios)} 筆 P/C Ratio (數值: {pc_ratios})")
+            
+            return {'pc_5d_avg': self._calc_avg(pc_ratios, 5)}
+            
+        except Exception as e:
+            print(f"[WARNING] P/C Ratio 歷史下載失敗: {e}")
+            return {'pc_5d_avg': None}
     
     def fetch_futures_history(self, num_days: int = 5) -> Dict[str, Any]:
         """抓取多日外資期貨淨部位並計算統計值"""

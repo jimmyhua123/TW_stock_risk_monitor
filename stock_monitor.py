@@ -19,8 +19,8 @@ from io import StringIO
 import time
 
 # 匯入現有模組
+# 匯入現有模組
 from risk_monitor import get_trading_date
-from chip_enrichment import ChipEnrichmentFetcher
 
 
 class StockDataFetcher:
@@ -526,16 +526,14 @@ class StockDataFetcher:
 class StockMonitor:
     """個股籌碼監控主類別"""
     
-    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json', finmind_token: str = None):
+    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json'):
         """
         Args:
             date_str: 日期字串，格式 YYYYMMDD
             watchlist_path: 自選股清單路徑
-            finmind_token: FinMind API token (可選，用於分點資料)
         """
         self.date_str = date_str
         self.watchlist_path = watchlist_path
-        self.finmind_token = finmind_token
         self.watchlist = []
         self.stock_data = {}
     
@@ -627,26 +625,6 @@ class StockMonitor:
                 # 5日成交量 (用於進階指標計算)
                 'volume_5d': hist.get('volume_5d', 0),
             }
-        
-        # 抓取進階籌碼指標
-        print("[5/5] 計算進階籌碼指標...")
-        try:
-            enricher = ChipEnrichmentFetcher(self.date_str, self.finmind_token)
-            self.stock_data = enricher.enrich_all(self.stock_data)
-        except Exception as e:
-            print(f"[WARNING] 進階籌碼指標計算失敗: {e}")
-            # 設定預設值
-            for code in self.stock_data:
-                self.stock_data[code].update({
-                    'broker_buy_sell_diff': None,
-                    'chip_concentration_5d': None,
-                    'sbl_sell_balance': None,
-                    'short_cover_days': None,
-                    'vwap_20d_approx': None,
-                    'vwap_bias': None,
-                    'data_source': 'error',
-                    'is_simulated': 1,
-                })
         
         print("\n[SUCCESS] 個股籌碼資料抓取完成！\n")
     
@@ -797,12 +775,11 @@ class StockMonitor:
         ws.merge_cells('A1:O1')
         ws['A1'].alignment = Alignment(horizontal='center')
         
-        # 表頭 (包含進階指標)
+        # 表頭
         headers = [
             '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價',
-            '買賣券商差', '籌碼集中度5D(%)', '借券賣出餘額', '短回補天數', 'VWAP20D', 'VWAP乖離(%)', '資料來源'
+            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價'
         ]
         
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -836,32 +813,16 @@ class StockMonitor:
             ws.cell(row, 14, data['dist_ma20'])
             ws.cell(row, 15, chips_score)
             
-            # 進階籌碼指標
-            ws.cell(row, 16, data.get('broker_buy_sell_diff'))
-            ws.cell(row, 17, data.get('chip_concentration_5d'))
-            ws.cell(row, 18, data.get('sbl_sell_balance'))
-            ws.cell(row, 19, data.get('short_cover_days'))
-            ws.cell(row, 20, data.get('vwap_20d_approx'))
-            ws.cell(row, 21, data.get('vwap_bias'))
-            ws.cell(row, 22, data.get('data_source', 'N/A'))
-            
             # 條件格式 - 外資買超綠色，賣超紅色
             if data['foreign_daily'] and data['foreign_daily'] > 0:
                 ws.cell(row, 6).font = Font(color="008000")
             elif data['foreign_daily'] and data['foreign_daily'] < 0:
                 ws.cell(row, 6).font = Font(color="FF0000")
             
-            # 籌碼集中度顏色
-            if data.get('chip_concentration_5d'):
-                if data['chip_concentration_5d'] > 0:
-                    ws.cell(row, 17).font = Font(color="008000")
-                elif data['chip_concentration_5d'] < 0:
-                    ws.cell(row, 17).font = Font(color="FF0000")
-            
             row += 1
         
         # 調整欄寬 (含進階指標欄位)
-        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 12, 12, 14, 14, 12, 10, 12, 10]
+        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 12]
         for i, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
         
@@ -901,15 +862,6 @@ class StockMonitor:
                 '借券增減(張)': data.get('lending_daily_change'),
                 'MA20乖離(%)': data.get('dist_ma20'),
                 '籌碼評價': chips_score,
-                # 新增進階指標
-                'Broker_Buy_Sell_Diff': data.get('broker_buy_sell_diff'),
-                'Chip_Concentration_5D': data.get('chip_concentration_5d'),
-                'SBL_Sell_Balance': data.get('sbl_sell_balance'),
-                'Short_Cover_Days': data.get('short_cover_days'),
-                'VWAP_20D_Approx': data.get('vwap_20d_approx'),
-                'VWAP_Bias': data.get('vwap_bias'),
-                'data_source': data.get('data_source', 'N/A'),
-                'is_simulated': data.get('is_simulated', 1),
             })
         
         df = pd.DataFrame(rows)
@@ -994,12 +946,7 @@ def main():
         help='Excel 輸出檔名'
     )
     
-    parser.add_argument(
-        '--token',
-        type=str,
-        default=None,
-        help='FinMind API token (用於抓取分點資料)'
-    )
+
     
     parser.add_argument(
         '--csv',
@@ -1017,7 +964,7 @@ def main():
     
     # 執行監控
     try:
-        monitor = StockMonitor(trading_date, args.watchlist, args.token)
+        monitor = StockMonitor(trading_date, args.watchlist)
         monitor.load_watchlist()
         monitor.fetch_all_data()
         monitor.display()
