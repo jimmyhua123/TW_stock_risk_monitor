@@ -8,7 +8,9 @@ cd TW_stock_risk_monitor
 
 ### 整合報告（大盤 + 歷史統計 + 個股籌碼 + 進階指標）
 ```bash
-python main.py --date 20260204 --output 20260204.xlsx
+python main.py --date 20260205 --output 20260205.xlsx
+
+
 python main.py --date 20260203 --output 20260204.xlsx --token YOUR_FINMIND_TOKEN
 ```
 
@@ -72,7 +74,10 @@ python risk_monitor_history.py 20260203
 #### Excel 轉 JSON (AI 易讀格式)
 將產生的 Excel 報表轉換為 JSON 格式，方便丟給 AI (如 ChatGPT/Claude) 進行分析。
 ```bash
-python excel_to_json.py 20260204.xlsx
-# 指定輸出檔名
-python excel_to_json.py monitor_xlsx/20260204.xlsx -o analysis_data.json
+python excel_to_json.py monitor_xlsx/20260205.xlsx
 ```
+
+## 注意事項
+1. 融資融券餘額資料 要 21:30 後才會有
+2. 執行太多次會被 台灣證券交易所 會鎖 IP 隔1-2小時後再執行
+3. 可以自己在watchlist.json 新增想監控的股票
