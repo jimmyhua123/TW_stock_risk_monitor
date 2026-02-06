@@ -13,7 +13,7 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260205 --output risk_report.xlsx
+python main.py --date 20260205 --output 20260205.xlsx
 ```
 
 輸出內容：
@@ -59,8 +59,8 @@ python risk_monitor.py
 # 多日歷史統計
 python risk_monitor_history.py 20260205
 
-# Excel 轉 JSON (AI 分析用)
-python excel_to_json.py monitor_xlsx/report.xlsx
+# 批量轉換  Excel 轉 JSON (給AI 分析用)
+python excel_to_json.py
 ```
 
 ## 注意事項
