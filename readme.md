@@ -13,7 +13,7 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260205 --output 20260205.xlsx
+python main.py --date 20260223 --output 20260223.xlsx
 ```
 
 輸出內容：
@@ -46,7 +46,7 @@ python stock_monitor.py --csv  # 同時輸出 CSV
 ### 3. 黃金動態監控
 ```bash
 python gold_monitor.py
-python gold_monitor.py --date 20260128
+python gold_monitor.py --date 2026-02-23
 ```
 
 ---
