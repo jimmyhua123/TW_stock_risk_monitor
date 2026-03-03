@@ -263,7 +263,7 @@ class IntegratedRiskReport:
         
         # 表頭 (包含進階籌碼指標)
         headers = [
-            '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
+            '股票代號', '股票名稱', '市場別', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
             '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價',
             '買賣券商差', '籌碼集中度5D(%)', '借券賣出餘額', '短回補天數', 'VWAP20D', 'VWAP乖離(%)', '資料來源'
@@ -286,52 +286,53 @@ class IntegratedRiskReport:
             
             ws.cell(row, 1, data.get('code', ''))
             ws.cell(row, 2, data.get('name', ''))
-            ws.cell(row, 3, data.get('close'))
-            ws.cell(row, 4, data.get('pct_change'))
-            ws.cell(row, 5, data.get('volume'))
-            ws.cell(row, 6, data.get('foreign_daily'))
-            ws.cell(row, 7, data.get('foreign_5d_sum'))
-            ws.cell(row, 8, data.get('trust_daily'))
-            ws.cell(row, 9, data.get('trust_5d_sum'))
-            ws.cell(row, 10, data.get('dealer_daily'))
-            ws.cell(row, 11, data.get('margin_daily_change'))
-            ws.cell(row, 12, data.get('margin_5d_sum'))
-            ws.cell(row, 13, data.get('lending_daily_change'))
-            ws.cell(row, 14, data.get('dist_ma20'))
-            ws.cell(row, 15, chips_score)
+            ws.cell(row, 3, data.get('market', ''))
+            ws.cell(row, 4, data.get('close'))
+            ws.cell(row, 5, data.get('pct_change'))
+            ws.cell(row, 6, data.get('volume'))
+            ws.cell(row, 7, data.get('foreign_daily'))
+            ws.cell(row, 8, data.get('foreign_5d_sum'))
+            ws.cell(row, 9, data.get('trust_daily'))
+            ws.cell(row, 10, data.get('trust_5d_sum'))
+            ws.cell(row, 11, data.get('dealer_daily'))
+            ws.cell(row, 12, data.get('margin_daily_change'))
+            ws.cell(row, 13, data.get('margin_5d_sum'))
+            ws.cell(row, 14, data.get('lending_daily_change'))
+            ws.cell(row, 15, data.get('dist_ma20'))
+            ws.cell(row, 16, chips_score)
             
             # 進階籌碼指標
-            ws.cell(row, 16, data.get('broker_buy_sell_diff'))
-            ws.cell(row, 17, data.get('chip_concentration_5d'))
-            ws.cell(row, 18, data.get('sbl_sell_balance'))
-            ws.cell(row, 19, data.get('short_cover_days'))
-            ws.cell(row, 20, data.get('vwap_20d_approx'))
-            ws.cell(row, 21, data.get('vwap_bias'))
-            ws.cell(row, 22, data.get('data_source', 'N/A'))
+            ws.cell(row, 17, data.get('broker_buy_sell_diff'))
+            ws.cell(row, 18, data.get('chip_concentration_5d'))
+            ws.cell(row, 19, data.get('sbl_sell_balance'))
+            ws.cell(row, 20, data.get('short_cover_days'))
+            ws.cell(row, 21, data.get('vwap_20d_approx'))
+            ws.cell(row, 22, data.get('vwap_bias'))
+            ws.cell(row, 23, data.get('data_source', 'N/A'))
             
             # 條件格式 - 外資買超綠色，賣超紅色
             if data.get('foreign_daily') and data['foreign_daily'] > 0:
-                ws.cell(row, 6).font = Font(color="008000")
+                ws.cell(row, 7).font = Font(color="008000")
             elif data.get('foreign_daily') and data['foreign_daily'] < 0:
-                ws.cell(row, 6).font = Font(color="FF0000")
+                ws.cell(row, 7).font = Font(color="FF0000")
             
             # 漲跌幅顏色
             if data.get('pct_change') and data['pct_change'] > 0:
-                ws.cell(row, 4).font = Font(color="FF0000")
+                ws.cell(row, 5).font = Font(color="FF0000")
             elif data.get('pct_change') and data['pct_change'] < 0:
-                ws.cell(row, 4).font = Font(color="008000")
+                ws.cell(row, 5).font = Font(color="008000")
             
             # 籌碼集中度顏色
             if data.get('chip_concentration_5d'):
                 if data['chip_concentration_5d'] > 0:
-                    ws.cell(row, 17).font = Font(color="008000")
+                    ws.cell(row, 18).font = Font(color="008000")
                 elif data['chip_concentration_5d'] < 0:
-                    ws.cell(row, 17).font = Font(color="FF0000")
+                    ws.cell(row, 18).font = Font(color="FF0000")
             
             row += 1
         
         # 調整欄寬 (含進階指標欄位)
-        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 14, 12, 14, 14, 12, 10, 12, 10]
+        col_widths = [10, 12, 10, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 14, 12, 14, 14, 12, 10, 12, 10]
         for i, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
     

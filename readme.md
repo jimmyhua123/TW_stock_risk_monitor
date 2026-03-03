@@ -13,7 +13,10 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260223 --output 20260223.xlsx
+python main.py --date 20260302 --output 20260302.xlsx
+
+python main.py --date 20260211 --output 20260211.xlsx
+
 ```
 
 輸出內容：
@@ -43,7 +46,26 @@ python stock_monitor.py --csv  # 同時輸出 CSV
 
 ---
 
-### 3. 黃金動態監控
+### 3. 個股多日資料回補 (backfill_stock.py)
+專為新加入自選股或想回測特定股票所設計的工具。
+
+**特點：**
+- 自動略過休假日。
+- 支援動態合併至現有報表 (`--merge`)，不會覆蓋或錯置進階欄位。
+- 支援區分與輸出股票的「市場別」(上市/上櫃)。
+- 即使只輸入代號，系統也會自動尋找名稱補上。
+
+```bash
+# 產生獨立包含多天資料（按天分頁）的 Excel
+python backfill_stock.py --codes 6669 6223 --days 20 --date 20260226
+
+# 將回補資料直接併入每天已存在的 monitor_xlsx/YYYYMMDD.xlsx 中
+python backfill_stock.py --codes 3138 --days 20 --date 20260302 --merge
+```
+
+---
+
+### 4. 黃金動態監控
 ```bash
 python gold_monitor.py
 python gold_monitor.py --date 2026-02-23

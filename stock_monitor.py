@@ -19,9 +19,8 @@ from io import StringIO
 import time
 
 # 匯入現有模組
-# 匯入現有模組
 from risk_monitor import get_trading_date
-
+from risk_monitor_history import get_previous_trading_days
 
 class StockDataFetcher:
     """個股資料抓取器 (支援上市 TWSE + 上櫃 TPEx)"""
@@ -401,6 +400,7 @@ class StockDataFetcher:
                         
                         result[code] = {
                             'name': str(row[1]).strip(),
+                            'market': '上市',
                             'close': close,
                             'change': change_val,
                             'pct_change': pct_change,
@@ -470,6 +470,7 @@ class StockDataFetcher:
                         
                         result[code] = {
                             'name': str(row[1]).strip(),
+                            'market': '上櫃',
                             'close': close,
                             'change': change_val,
                             'pct_change': pct_change,
@@ -588,6 +589,10 @@ class StockMonitor:
             price_data = prices.get(code, {})
             hist = history_data.get(code, {})
             
+            # 如果自選股沒填名稱，嘗試從獲取的資料補齊
+            if not name:
+                name = price_data.get('name', '') or inst_data.get('name', '')
+            
             # 計算 MA20 乖離率
             dist_ma20 = None
             if price_data.get('close') and hist.get('ma20'):
@@ -598,6 +603,7 @@ class StockMonitor:
             self.stock_data[code] = {
                 'code': code,
                 'name': name,
+                'market': price_data.get('market', ''),
                 
                 # 價格資料
                 'close': price_data.get('close'),
@@ -632,25 +638,44 @@ class StockMonitor:
         """抓取過去 5 天資料計算累計"""
         result = {}
         
-        # 計算過去 5 個交易日
-        base_date = datetime.strptime(self.date_str, '%Y%m%d')
-        trading_days = []
-        check_date = base_date - timedelta(days=1)
-        
-        while len(trading_days) < 5:
-            # 跳過週末
-            if check_date.weekday() < 5:
-                trading_days.append(check_date.strftime('%Y%m%d'))
-            check_date -= timedelta(days=1)
+        # 取得候選的交易日 (多抓幾天作為緩衝)，並排除當天本身
+        candidate_days = [
+            d for d in get_previous_trading_days(self.date_str, 5, buffer_days=10)
+            if d < self.date_str  # 只取「當天之前」的日期
+        ]
+        # 從最新到最舊依序查找 (candidate_days 目前是舊→新，反轉後新→舊)
+        candidate_days = list(reversed(candidate_days))
         
         # 收集歷史資料
         history_institutional = {}
         history_margin = {}
         history_prices = {}
         
-        for i, date in enumerate(trading_days):
-            print(f"    抓取 {date} 歷史資料... ({i+1}/5)")
+        valid_days_count = 0
+        
+        for date in candidate_days:
+            if valid_days_count >= 5:
+                break
+                
+            print(f"    嘗試抓取 {date} 歷史資料... (已收集 {valid_days_count}/5)")
             fetcher = StockDataFetcher(date)
+            
+            # 以股價資料是否存在來判斷是否為真實開市日
+            prices = fetcher.fetch_stock_prices()
+            if not prices:
+                print(f"    - {date} 無資料 (可能是假日)，跳過")
+                time.sleep(1.0)
+                continue
+                
+            valid_days_count += 1
+            
+            for code, data in prices.items():
+                if code not in history_prices:
+                    history_prices[code] = []
+                history_prices[code].append({
+                    'close': data.get('close', 0),
+                    'volume': data.get('volume', 0)
+                })
             
             inst = fetcher.fetch_institutional_trading()
             for code, data in inst.items():
@@ -663,15 +688,6 @@ class StockMonitor:
                 if code not in history_margin:
                     history_margin[code] = []
                 history_margin[code].append(data)
-            
-            prices = fetcher.fetch_stock_prices()
-            for code, data in prices.items():
-                if code not in history_prices:
-                    history_prices[code] = []
-                history_prices[code].append({
-                    'close': data.get('close', 0),
-                    'volume': data.get('volume', 0)
-                })
             
             time.sleep(2.0)  # 避免請求太頻繁 (TWSE API 限制)
         
@@ -739,6 +755,7 @@ class StockMonitor:
             table_data.append([
                 data['code'],
                 data['name'],
+                data.get('market', ''),
                 f"{data['close']:.2f}" if data['close'] else 'N/A',
                 f"{data['pct_change']:+.2f}%" if data['pct_change'] else 'N/A',
                 fmt(data['volume']),
@@ -751,7 +768,7 @@ class StockMonitor:
                 f"{data['dist_ma20']:+.2f}%" if data['dist_ma20'] else 'N/A',
             ])
         
-        headers = ['代號', '名稱', '收盤價', '漲跌幅', '成交量', 
+        headers = ['代號', '名稱', '市場別', '收盤價', '漲跌幅', '成交量', 
                    '外資(張)', '外資5日', '投信(張)', '投信5日',
                    '融資增減', '融資5日', 'MA20乖離']
         
@@ -777,7 +794,7 @@ class StockMonitor:
         
         # 表頭
         headers = [
-            '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
+            '股票代號', '股票名稱', '市場別', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
             '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價'
         ]
@@ -799,30 +816,31 @@ class StockMonitor:
             
             ws.cell(row, 1, data['code'])
             ws.cell(row, 2, data['name'])
-            ws.cell(row, 3, data['close'])
-            ws.cell(row, 4, data['pct_change'])
-            ws.cell(row, 5, data['volume'])
-            ws.cell(row, 6, data['foreign_daily'])
-            ws.cell(row, 7, data['foreign_5d_sum'])
-            ws.cell(row, 8, data['trust_daily'])
-            ws.cell(row, 9, data['trust_5d_sum'])
-            ws.cell(row, 10, data['dealer_daily'])
-            ws.cell(row, 11, data['margin_daily_change'])
-            ws.cell(row, 12, data['margin_5d_sum'])
-            ws.cell(row, 13, data['lending_daily_change'])
-            ws.cell(row, 14, data['dist_ma20'])
-            ws.cell(row, 15, chips_score)
+            ws.cell(row, 3, data.get('market', ''))
+            ws.cell(row, 4, data['close'])
+            ws.cell(row, 5, data['pct_change'])
+            ws.cell(row, 6, data['volume'])
+            ws.cell(row, 7, data['foreign_daily'])
+            ws.cell(row, 8, data['foreign_5d_sum'])
+            ws.cell(row, 9, data['trust_daily'])
+            ws.cell(row, 10, data['trust_5d_sum'])
+            ws.cell(row, 11, data['dealer_daily'])
+            ws.cell(row, 12, data['margin_daily_change'])
+            ws.cell(row, 13, data['margin_5d_sum'])
+            ws.cell(row, 14, data['lending_daily_change'])
+            ws.cell(row, 15, data['dist_ma20'])
+            ws.cell(row, 16, chips_score)
             
             # 條件格式 - 外資買超綠色，賣超紅色
             if data['foreign_daily'] and data['foreign_daily'] > 0:
-                ws.cell(row, 6).font = Font(color="008000")
+                ws.cell(row, 7).font = Font(color="008000")
             elif data['foreign_daily'] and data['foreign_daily'] < 0:
-                ws.cell(row, 6).font = Font(color="FF0000")
+                ws.cell(row, 7).font = Font(color="FF0000")
             
             row += 1
         
         # 調整欄寬 (含進階指標欄位)
-        col_widths = [10, 12, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 12]
+        col_widths = [10, 12, 10, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 12]
         for i, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
         
@@ -850,6 +868,7 @@ class StockMonitor:
                 '日期': self.date_str,
                 '股票代號': data.get('code', ''),
                 '股票名稱': data.get('name', ''),
+                '市場別': data.get('market', ''),
                 '收盤價': data.get('close'),
                 '成交量(張)': data.get('volume'),
                 '外資當日(張)': data.get('foreign_daily'),
