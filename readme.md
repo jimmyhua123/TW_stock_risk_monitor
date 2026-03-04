@@ -13,7 +13,7 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260302 --output 20260302.xlsx
+python main.py --date 20260303 --output 20260303.xlsx
 
 python main.py --date 20260211 --output 20260211.xlsx
 
