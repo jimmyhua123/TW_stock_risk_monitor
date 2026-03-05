@@ -15,7 +15,7 @@ python main.py
 # 生成指定日期的報告
 python main.py --date 20260304 --output 20260304.xlsx
 
-python main.py --date 20260211 --output 20260211.xlsx
+python main.py --date 20260121 --output 20260121.xlsx
 
 ```
 
