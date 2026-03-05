@@ -13,7 +13,7 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260303 --output 20260303.xlsx
+python main.py --date 20260304 --output 20260304.xlsx
 
 python main.py --date 20260211 --output 20260211.xlsx
 
@@ -69,6 +69,14 @@ python backfill_stock.py --codes 3138 --days 20 --date 20260302 --merge
 ```bash
 python gold_monitor.py
 python gold_monitor.py --date 2026-02-23
+```
+
+---
+
+### 5. 盤中即時監控 (intraday_monitor.py)
+擷取大盤、期貨及自選股(`watchlist.json`)的最新盤中走勢與漲跌百分比，並將結果自動附加到 `看盤筆記/MMDD.md` 內。
+```bash
+python intraday_monitor.py
 ```
 
 ---
