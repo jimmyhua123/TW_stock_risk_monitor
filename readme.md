@@ -13,7 +13,7 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260305 --output 20260305.xlsx
+python main.py --date 20260306 --output 20260306.xlsx
 
 python main.py --date 20260121 --output 20260121.xlsx
 
@@ -77,6 +77,19 @@ python gold_monitor.py --date 2026-02-23
 擷取大盤、期貨及自選股(`watchlist.json`)的最新盤中走勢與漲跌百分比，並將結果自動附加到 `看盤筆記/MMDD.md` 內。
 ```bash
 python intraday_monitor.py
+```
+
+---
+
+### 6. 批量執行指令工具 (batch_runner.py)
+用來連續多天自動執行帶有日期的指令，自動略過假日，方便一次性抓取多天報告。
+
+```bash
+# 連續取得過去 30 天的整合風險報告
+python batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 30
+
+# 從指定日期往前推 5 天執行
+python batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 5 --end-date 20260301
 ```
 
 ---

@@ -83,14 +83,14 @@ def fetch_industry_mapping():
     df_mapping = pd.DataFrame.from_dict(mapping, orient='index')
     return df_mapping
 
-def fetch_institutional_5d(base_date=None):
-    """取得近 5 個交易日外資與投信的買賣超數據 (合計)"""
-    dates_str_twse, _, dates_tpex = get_recent_trading_days(5, base_date)
+def fetch_institutional_3d(base_date=None):
+    """取得近 3 個交易日外資與投信的買賣超數據 (合計)"""
+    dates_str_twse, _, dates_tpex = get_recent_trading_days(3, base_date)
     
     foreign_net = {}
     trust_net = {}
     
-    logging.info(f"拉取近五日法人買賣超 ({dates_str_twse[-1]} ~ {dates_str_twse[0]})...")
+    logging.info(f"拉取近三日法人買賣超 ({dates_str_twse[-1]} ~ {dates_str_twse[0]})...")
     
     # === 上市 (T86) ===
     for d in dates_str_twse:
@@ -143,10 +143,10 @@ def fetch_institutional_5d(base_date=None):
             logging.warning(f"無法取得上櫃 {date_str} 法人資料: {e}")
 
     # 轉換成 張數
-    foreign_5d = {k: v / 1000 for k, v in foreign_net.items()}
-    trust_5d = {k: v / 1000 for k, v in trust_net.items()}
+    foreign_3d = {k: v / 1000 for k, v in foreign_net.items()}
+    trust_3d = {k: v / 1000 for k, v in trust_net.items()}
     
-    df = pd.DataFrame({'foreign_buy_5d': foreign_5d, 'trust_buy_5d': trust_5d})
+    df = pd.DataFrame({'foreign_buy_3d': foreign_3d, 'trust_buy_3d': trust_3d})
     return df
 
 def fetch_market_data(mapping_df, max_date_str, target_industries=None):
@@ -209,31 +209,27 @@ def fetch_market_data(mapping_df, max_date_str, target_industries=None):
             else:
                 atr14 = 0
                 
-            # 計算區間報酬率 (RS 計算基礎)
-            stock_ret_20d = (close[-1] / close[-21]) - 1 if len(close) >= 21 else 0
-            stock_ret_5d = (close[-1] / close[-6]) - 1 if len(close) >= 6 else 0
-            stock_ret_5d_yest = (close[-2] / close[-7]) - 1 if len(close) >= 7 else 0
-            
-            # 成交額 (粗略以收盤價 * 成交量)
-            vol_amount_array = volume * close
-            vol_amount_60d = np.pad(vol_amount_array[-60:], (max(0, 60 - len(vol_amount_array[-60:])), 0), 'constant')
+            # 計算區間 20 日報酬率 (RS 計算基礎)
+            rs_20d = (close[-1] / close[-21]) - 1 if len(close) >= 21 else 0
             
             results[ticker_mapping[ticker]] = {
                 'latest_close': close[-1],
                 'latest_open': open_p[-1],
                 'latest_volume': volume[-1],
                 'atr14': atr14,
-                'stock_ret_20d': stock_ret_20d,
-                'stock_ret_5d': stock_ret_5d,
-                'stock_ret_5d_yest': stock_ret_5d_yest,
+                'rs_20d': rs_20d,
                 # 均線
                 'ma5': np.mean(close[-5:]),
                 'ma20': np.mean(close[-20:]),
-                # 歷史近60日資金
-                'vol_amount_60d': vol_amount_60d,
-                'latest_vol_amount': vol_amount_array[-1],
+                # 成交額 (粗略以收盤價 * 成交量)
+                'latest_vol_amount': volume[-1] * close[-1],
+                'vol_amount_1d': volume[-1] * close[-1],
+                'vol_amount_2d': volume[-2] * close[-2],
+                'vol_amount_3d': volume[-3] * close[-3],
+                'vol_amount_4d': volume[-4] * close[-4],
+                'vol_amount_5d': volume[-5] * close[-5],
                 # 5日均量
-                'avg_vol_amount_5d': np.mean(vol_amount_array[-5:]),
+                'avg_vol_amount_5d': np.mean(volume[-5:] * close[-5:]),
                 # 收紅盤判斷 (收盤 > 開盤)
                 'is_red': close[-1] > open_p[-1]
             }
@@ -289,61 +285,33 @@ def main():
     recent_days_str, _, _ = get_recent_trading_days(1, base_date)
     target_date_str = recent_days_str[0]
         
-    # 2. 抓取大盤與總經指標 (TAIEX, ^TNX, TWD=X)
-    logging.info("獲取大盤加權指數(^TWII)與總經指標以判定 Market Regime...")
-    
-    taiex_ret_20d, taiex_ret_5d, taiex_ret_5d_yest = 0, 0, 0
-    market_regime = 'bull'
-    tnx_risk = False
-    twd_risk = False
-    
-    # (1) 大盤判定
+    # 2. 抓取大盤 (TAIEX) 多空濾網
+    logging.info("獲取大盤加權指數(^TWII)以判定 Market Regime...")
     taiex_data = yf.download("^TWII", period="60d", progress=False)
+    
     if taiex_data.empty:
         logging.warning("無法取得大盤資料，預設為多頭模式")
+        market_regime = 'bull'
+        taiex_rs_20d = 0
     else:
         t_close_series = taiex_data['Close']
-        t_close = t_close_series.iloc[:, 0].values.flatten() if isinstance(t_close_series, pd.DataFrame) else t_close_series.values.flatten()
+        if isinstance(t_close_series, pd.DataFrame):
+             t_close = t_close_series.iloc[:, 0].values.flatten()
+        else:
+             t_close = t_close_series.values.flatten()
              
         t_ma20 = np.mean(t_close[-20:])
         t_ma60 = np.mean(t_close[-60:]) if len(t_close) >= 60 else t_ma20
         t_ma20_yest = np.mean(t_close[-21:-1]) if len(t_close) >= 21 else t_ma20
+        taiex_rs_20d = (t_close[-1] / t_close[-21]) - 1 if len(t_close) >= 21 else 0
         
-        taiex_ret_20d = (t_close[-1] / t_close[-21]) - 1 if len(t_close) >= 21 else 0
-        taiex_ret_5d = (t_close[-1] / t_close[-6]) - 1 if len(t_close) >= 6 else 0
-        taiex_ret_5d_yest = (t_close[-2] / t_close[-7]) - 1 if len(t_close) >= 7 else 0
-        
-        if len(t_close) > 0 and t_close[-1] > t_ma20 and t_ma20 > t_ma60 and t_ma20 > t_ma20_yest:
+        # 大盤多空濾網：收盤 > 20MA 且 20MA > 60MA 且 20MA 斜率向上 = 全面偏多
+        if t_close[-1] > t_ma20 and t_ma20 > t_ma60 and t_ma20 > t_ma20_yest:
             market_regime = 'bull'
         else:
             market_regime = 'bear'
             
-        logging.info(f"大盤判定: {'全面偏多' if market_regime == 'bull' else '警戒/空頭'}")
-
-    # (2) 總經風險判定
-    try:
-        macro_data = yf.download(["^TNX", "TWD=X"], period="60d", group_by='ticker', progress=False)
-        # ^TNX 美債10年期
-        if "^TNX" in macro_data.columns.levels[0]:
-            tnx_c = macro_data["^TNX"]["Close"].dropna().values.flatten()
-            if len(tnx_c) >= 20:
-                tnx_ma5 = np.mean(tnx_c[-5:])
-                tnx_ma20 = np.mean(tnx_c[-20:])
-                tnx_ma20_yest = np.mean(tnx_c[-21:-1])
-                if tnx_ma5 > tnx_ma20 and tnx_ma20 > tnx_ma20_yest:
-                    tnx_risk = True
-        
-        # TWD=X 匯率
-        if "TWD=X" in macro_data.columns.levels[0]:
-            twd_c = macro_data["TWD=X"]["Close"].dropna().values.flatten()
-            if len(twd_c) >= 20:
-                twd_ma5 = np.mean(twd_c[-5:])
-                twd_ma20 = np.mean(twd_c[-20:])
-                twd_ma20_yest = np.mean(twd_c[-21:-1])
-                if twd_ma5 > twd_ma20 and twd_ma20 > twd_ma20_yest:
-                    twd_risk = True
-    except Exception as e:
-        logging.warning(f"取得總經指標失敗: {e}")
+        logging.info(f"大盤判定: {'全面偏多' if market_regime == 'bull' else '警戒/空頭'} (收盤:{t_close[-1]:.0f}, 20MA:{t_ma20:.0f}, 60MA:{t_ma60:.0f})")
 
     # 3. 獲取全市場近 60 日的價量資料
     logging.info("第一步：計算全市場產業資金流向及收紅比例...")
@@ -356,90 +324,40 @@ def main():
     # 合併產業資訊
     df_market_full = df_market.join(df_industry).fillna(0)
     
-    # 計算「產業資金佔比」與「Trend Score」
-    def sum_arrays(series):
-        valid_arrays = [arr for arr in series.values if isinstance(arr, np.ndarray) and len(arr) == 60]
-        if not valid_arrays: return np.zeros(60)
-        return np.sum(np.stack(valid_arrays), axis=0)
-
-    industry_vol_60d = df_market_full.groupby('產業')['vol_amount_60d'].apply(sum_arrays)
+    # 計算「產業資金佔比」與「資金流入增長率」
+    industry_1d = df_market_full.groupby('產業')['vol_amount_1d'].sum()
+    industry_5d = df_market_full.groupby('產業')['avg_vol_amount_5d'].sum()
     
-    market_vol_60d = np.zeros(60)
-    for arr in industry_vol_60d:
-        market_vol_60d += arr
-        
-    market_vol_60d_safe = np.where(market_vol_60d == 0, 1, market_vol_60d)
-    industry_ratio_sq = {ind: arr / market_vol_60d_safe for ind, arr in industry_vol_60d.items()}
+    market_1d = industry_1d.sum()
+    market_5d = industry_5d.sum()
     
-    industry_stats = {}
-    for ind, ratios in industry_ratio_sq.items():
-        today_ratio = ratios[-1]
-        avg_5d = np.mean(ratios[-5:])
-        avg_20d = np.mean(ratios[-20:])
-        avg_60d = np.mean(ratios)
-        
-        slope_1d = (today_ratio / avg_5d - 1) if avg_5d > 0 else 0
-        slope_5d = (avg_5d / avg_20d - 1) if avg_20d > 0 else 0
-        slope_20d = (avg_20d / avg_60d - 1) if avg_60d > 0 else 0
-        
-        industry_stats[ind] = {
-            'today_ratio': today_ratio,
-            'slope_1d': slope_1d,
-            'slope_5d': slope_5d,
-            'slope_20d': slope_20d,
-        }
+    today_ratio = industry_1d / market_1d
+    avg_5d_ratio = industry_5d / market_5d
     
-    df_ind_stats = pd.DataFrame.from_dict(industry_stats, orient='index')
-    
-    df_ind_stats['rank_1d'] = df_ind_stats['slope_1d'].rank(pct=True)
-    df_ind_stats['rank_5d'] = df_ind_stats['slope_5d'].rank(pct=True)
-    df_ind_stats['rank_20d'] = df_ind_stats['slope_20d'].rank(pct=True)
-    
-    df_ind_stats['trend_score'] = 0.2 * df_ind_stats['rank_1d'] + 0.3 * df_ind_stats['rank_5d'] + 0.5 * df_ind_stats['rank_20d']
-    
-    # 計算資金集中度穩定性 (過去 20 日進前 5 名次數)
-    df_ratios_20d = pd.DataFrame({ind: ratios[-20:] for ind, ratios in industry_ratio_sq.items()})
-    top5_counts = {}
-    for i in range(20):
-        daily_top5 = df_ratios_20d.iloc[i].nlargest(5).index
-        for ind in daily_top5:
-            top5_counts[ind] = top5_counts.get(ind, 0) + 1
-            
-    df_ind_stats['top5_days_20d'] = pd.Series(top5_counts)
-    if df_ind_stats['top5_days_20d'].isnull().all():
-        df_ind_stats['top5_days_20d'] = 0
-    df_ind_stats['top5_days_20d'] = df_ind_stats['top5_days_20d'].fillna(0).astype(int)
+    # 資金流入增長率 = (今日佔比 / 5日平均佔比) - 1
+    inflow_growth = (today_ratio - avg_5d_ratio) / avg_5d_ratio.replace(0, np.nan)
+    inflow_growth = inflow_growth.fillna(0)
     
     # 計算收紅比例 (收盤 > 開盤)
     red_ratio = df_market_full.groupby('產業')['is_red'].mean()
     market_red_ratio = df_market_full['is_red'].mean()
     logging.info(f"今日大盤整體收紅比例基準為: {market_red_ratio:.2%}")
     
-    # 篩選強/弱勢產業 (各取 Top 5)，改以 trend_score 排序
+    # 篩選強/弱勢產業 (各取 Top 5)
     strong_categories = red_ratio[red_ratio > market_red_ratio].index
-    valid_strong = df_ind_stats.loc[df_ind_stats.index.isin(strong_categories)]
-    top_5_industries = valid_strong.sort_values(by='trend_score', ascending=False).head(5).index.tolist()
-    
-    # 總經風險預警動態調整 ATR 門檻
-    atr_limit = 2.0
-    tech_industries = {"半導體業", "電子零組件業", "電腦及週邊設備業", "光電業", "電子通路業", "通信網路業", "資訊服務業", "其他電子業"}
-    tech_count = sum(1 for ind in top_5_industries if ind in tech_industries)
-    if tnx_risk and tech_count >= 3:
-        atr_limit = 1.5
-        logging.warning(f"觸發殖利率與科技股集中風險，將 ATR 濾網收緊至 {atr_limit} 倍")
+    valid_growth = inflow_growth.loc[inflow_growth.index.isin(strong_categories)]
+    top_5_industries = valid_growth.sort_values(ascending=False).head(5).index.tolist()
     
     weak_categories = red_ratio[red_ratio < market_red_ratio].index
-    valid_weak = df_ind_stats.loc[df_ind_stats.index.isin(weak_categories)]
-    bottom_5_industries = valid_weak.sort_values(by='trend_score', ascending=True).head(5).index.tolist()
+    valid_decline = inflow_growth.loc[inflow_growth.index.isin(weak_categories)]
+    bottom_5_industries = valid_decline.sort_values(ascending=True).head(5).index.tolist()
     
     # 計算相對大盤強度 (區間 RS)
-    if 'stock_ret_20d' in df_market.columns:
-        df_market['rs_20d'] = (df_market['stock_ret_20d'] - taiex_ret_20d) * 100
-        df_market['rs_5d'] = (df_market['stock_ret_5d'] - taiex_ret_5d) * 100
-        df_market['rs_5d_yest'] = (df_market['stock_ret_5d_yest'] - taiex_ret_5d_yest) * 100
+    if 'rs_20d' in df_market.columns:
+        df_market['rs_20d'] = (df_market['rs_20d'] - taiex_rs_20d) * 100
         
     # 4. 抓取法人 (現貨)
-    df_inst = fetch_institutional_5d(base_date)
+    df_inst = fetch_institutional_3d(base_date)
     
     # 5. 資料合併
     df_all = df_market.join(df_industry).join(df_inst).fillna(0)
@@ -449,26 +367,25 @@ def main():
     # ==============================================================
     # 第二步：產業內部「個股篩選」
     # ==============================================================
-    logging.info("進行 RS 強度、20MA、籌碼及流動性過濾...")
+    logging.info("進行 20MA、籌碼及流動性過濾...")
     
-    # 條件 1. 技術面 (RS 動能、趨勢與動態 ATR 乖離)
-    # 動能 RS 條件：長線跑贏大盤 (RS_20 > 0) 且 短期動能加速 (今日 RS_5 > 昨日 RS_5)
-    cond_rs = (df_all['rs_20d'] > 0) & (df_all['rs_5d'] > df_all['rs_5d_yest'])
-    
-    # 強勢：今日收盤 > 20MA 且 5MA > 20MA 且乖離 <= 動態 ATR (預設2倍, 風險時1.5倍)
+    # 條件 1. 技術面 (趨勢與動態 ATR 乖離)
+    # 強勢：今日收盤 > 20MA 且 5MA > 20MA 且 (收盤 - 20MA) <= 2 * ATR
     cond_ma20 = (df_all['latest_close'] > df_all['ma20']) & \
                 (df_all['ma5'] > df_all['ma20']) & \
-                ((df_all['latest_close'] - df_all['ma20']) <= atr_limit * df_all['atr14'])
+                ((df_all['latest_close'] - df_all['ma20']) <= 2 * df_all['atr14'])
                 
     # 弱勢：今日收盤 < 20MA 且 5MA < 20MA
     cond_ma20_weak = (df_all['latest_close'] < df_all['ma20']) & \
                      (df_all['ma5'] < df_all['ma20'])
     
-    # 條件 2. 籌碼面 (基本門檻)
-    # 籌碼集中：近 5 日外資與投信合計買超張數 > 0 (進階的總股本比例過濾在下一步處理)
-    cond_chip = (df_all['foreign_buy_5d'] + df_all['trust_buy_5d']) > 0
-    # 弱勢籌碼
-    cond_chip_weak = (df_all['foreign_buy_5d'] + df_all['trust_buy_5d']) < 0
+    # 條件 2. 籌碼面
+    # 做多：外資 > -500, 投信 > -500, 兩者合計 > 0
+    cond_chip = (df_all['foreign_buy_3d'] > -500) & (df_all['trust_buy_3d'] > -500) & \
+                ((df_all['foreign_buy_3d'] + df_all['trust_buy_3d']) > 0)
+    # 做空：外資 < 500, 投信 < 500, 兩者合計 < 0
+    cond_chip_weak = (df_all['foreign_buy_3d'] < 500) & (df_all['trust_buy_3d'] < 500) & \
+                     ((df_all['foreign_buy_3d'] + df_all['trust_buy_3d']) < 0)
     
     # 條件 3. 流動性：5日均量 > 5000萬, 今日 > 1.3 倍
     cond_liquidity = (df_all['avg_vol_amount_5d'] > 50_000_000) & \
@@ -479,7 +396,7 @@ def main():
     cond_industry_weak = df_all['產業'].isin(bottom_5_industries)
     
     # 綜合篩選
-    filter_cond = cond_industry & cond_rs & cond_ma20 & cond_chip & cond_liquidity
+    filter_cond = cond_industry & cond_ma20 & cond_chip & cond_liquidity
     filter_cond_weak = cond_industry_weak & cond_ma20_weak & cond_chip_weak & cond_liquidity
     
     final_stocks = df_all[filter_cond].copy()
@@ -497,8 +414,8 @@ def main():
     # ==============================================================
     logging.info(f"針對最後 {len(final_stocks)} 檔強勢股與 {len(final_weak_stocks)} 檔弱勢股進行基本面(YoY)精篩...")
     
-    def apply_advanced_filters(df, is_weak=False):
-        """對做多候選股檢查: 1.營收年增率 > 0  2.近5日外資投信買超佔總股本 > 0.5%"""
+    def apply_yoy_filter(df, is_weak=False):
+        """對做多候選股檢查營收年增率 > 0，弱勢股不檢查"""
         if len(df) == 0 or is_weak:
             return df
             
@@ -510,29 +427,17 @@ def main():
                 
                 info = yf.Ticker(yf_ticker).info
                 rev_growth = info.get('revenueGrowth', 0)
-                shares_out = info.get('sharesOutstanding')
                 
-                # 條件A: 營收 YoY > 0 放行，查無資料也放行 (避免錯殺)
-                cond_rev = (rev_growth is None or rev_growth > 0)
-                
-                # 條件B: 近5日外資與投信合計買超張數佔總股本比例 > 0.5%
-                cond_chip_ratio = True
-                if shares_out and shares_out > 0:
-                    foreign_5d = df.loc[code, 'foreign_buy_5d']
-                    trust_5d = df.loc[code, 'trust_buy_5d']
-                    total_buy_shares = (foreign_5d + trust_5d) * 1000 # 轉換為股數
-                    chip_ratio = total_buy_shares / shares_out
-                    cond_chip_ratio = (chip_ratio > 0.005)
-                
-                pass_mask.append(cond_rev and cond_chip_ratio)
+                # 營收 YoY > 0 放行，查無資料也放行 (避免錯殺)
+                pass_mask.append(rev_growth is None or rev_growth > 0)
                     
             except Exception as e:
                 pass_mask.append(True)  # 例外則放行
                 
         return df[pass_mask]
 
-    final_stocks = apply_advanced_filters(final_stocks, is_weak=False)
-    final_weak_stocks = apply_advanced_filters(final_weak_stocks, is_weak=True)
+    final_stocks = apply_yoy_filter(final_stocks, is_weak=False)
+    final_weak_stocks = apply_yoy_filter(final_weak_stocks, is_weak=True)
     
     # ==============================================================
     # 第三步：結果呈現與總經風險預警
@@ -549,30 +454,30 @@ def main():
     
     output_lines.append(f"## 【第一步(A)：強勢資金流入產業 (Top 5)】")
         
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 55)
     print("【第一步(A)：強勢資金流入產業 (Top 5)】")
     for ind in top_5_industries:
-        stats = df_ind_stats.loc[ind]
-        line = f"- 產業: **{ind}** | 今日資金佔比: {stats['today_ratio']:.2%} | Trend Score: {stats['trend_score']:.2f} | 近20日進榜天數: {int(stats['top5_days_20d'])}天"
+        line = f"- 產業: **{ind}** | 今日資金佔比: {today_ratio.get(ind, 0):.2%} | 資金流入增長率: {inflow_growth.get(ind, 0):.1%}"
         output_lines.append(line)
-        print(f"  ● 產業: {ind:<8} | 今日資金佔比: {stats['today_ratio']:.2%} | Trend Score: {stats['trend_score']:.2f} | 近20日進榜天數: {int(stats['top5_days_20d'])}天")
+        print(f"  ● 產業: {ind:<8} | 今日資金佔比: {today_ratio.get(ind, 0):.2%} | 資金流入增長率: {inflow_growth.get(ind, 0):.1%}")
     output_lines.append("")
     
-    # 匯率預警 (Macro Risk Warning)
-    if twd_risk:
-        risk_msg = "⚠️ 【外資提款與匯率貶值風險警示】：近期美元兌新台幣(TWD=X)呈現連續貶值趨勢，需嚴防外資無差別提款引發流動性回撤風險！"
-        output_lines.insert(1, f"> {risk_msg}\n")
+    # 匯率與集中度預警 (Macro Risk Warning)
+    tech_industries = {"半導體業", "電子零組件業", "電腦及週邊設備業", "光電業", "電子通路業", "通信網路業", "資訊服務業", "其他電子業"}
+    tech_count = sum(1 for ind in top_5_industries if ind in tech_industries)
+    if tech_count >= 3:
+        risk_msg = "⚠️ 【總經風險預警】：目前 Top 5 資金流入產業高度集中於科技類股。此結構對「美國 10 年期公債殖利率 (US10Y)」及「美元兌新台幣 (USD/TWD)」極度敏感。若近期新台幣出現急貶趨勢，需嚴格防範外資無差別提款導致的流動性回撤風險。"
+        output_lines.append(f"> {risk_msg}\n\n")
         print(f"\n{risk_msg}")
         
     output_lines.append("## 【第一步(B)：弱勢資金流出產業 (Top 5)】")
-    print("-" * 70)
+    print("-" * 55)
     print("【第一步(B)：弱勢資金流出產業 (Top 5)】")
     for ind in bottom_5_industries:
-        stats = df_ind_stats.loc[ind]
-        line = f"- 產業: **{ind}** | 今日資金佔比: {stats['today_ratio']:.2%} | Trend Score: {stats['trend_score']:.2f} | 近20日進榜天數: {int(stats['top5_days_20d'])}天"
+        line = f"- 產業: **{ind}** | 今日資金佔比: {today_ratio.get(ind, 0):.2%} | 資金流入增長率: {inflow_growth.get(ind, 0):.1%}"
         output_lines.append(line)
-        print(f"  ● 產業: {ind:<8} | 今日資金佔比: {stats['today_ratio']:.2%} | Trend Score: {stats['trend_score']:.2f} | 近20日進榜天數: {int(stats['top5_days_20d'])}天")
-    print("=" * 70)
+        print(f"  ● 產業: {ind:<8} | 今日資金佔比: {today_ratio.get(ind, 0):.2%} | 資金流入增長率: {inflow_growth.get(ind, 0):.1%}")
+    print("=" * 55)
     output_lines.append("")
     
     def format_and_print_result(df, title, is_markdown=False):
@@ -592,8 +497,8 @@ def main():
             
             df_target['今日成交額(萬)'] = (df['latest_vol_amount'] / 10000).astype(int)
             df_target['5日均量(萬)'] = (df['avg_vol_amount_5d'] / 10000).astype(int)
-            df_target['近5日外資(張)'] = df['foreign_buy_5d'].round(0).astype('Int64')
-            df_target['近5日投信(張)'] = df['trust_buy_5d'].round(0).astype('Int64')
+            df_target['近3日外資(張)'] = df['foreign_buy_3d'].round(0).astype('Int64')
+            df_target['近3日投信(張)'] = df['trust_buy_3d'].round(0).astype('Int64')
             
             # 定義風險/狀態提示與籌碼沉澱
             cond_breakout = (df['latest_close'] > df['ma20']) & (df['latest_open'] <= df['ma20'])
