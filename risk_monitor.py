@@ -270,7 +270,8 @@ class YahooFinanceFetcher:
         'gold': 'GC=F',        # 黃金期貨
         'usd_twd': 'TWD=X',    # 美元/台幣
         'sox': '^SOX',         # 費城半導體指數
-        'vix': '^VIX'          # 恐慌指數
+        'vix': '^VIX',         # 恐慌指數
+        'wti': 'CL=F'          # WTI原油期貨
     }
     
     def __init__(self, date_str: str):
@@ -408,6 +409,14 @@ class RiskMonitor:
                     'change': yf_data['vix']['change_pct'],
                     'unit': '',
                     'risk': self._assess_risk('vix', yf_data['vix']['value'])
+                },
+                {
+                    'category': '原物料',
+                    'name': 'WTI原油期貨',
+                    'value': yf_data['wti']['value'],
+                    'change': yf_data['wti']['change_pct'],
+                    'unit': '$',
+                    'risk': self._assess_risk('wti', yf_data['wti']['change_pct'])
                 },
                 {
                     'category': '籌碼',
