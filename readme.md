@@ -13,7 +13,7 @@ cd TW_stock_risk_monitor
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260306 --output 20260306.xlsx
+python main.py --date 20260311 --output 20260311.xlsx
 
 python main.py --date 20260121 --output 20260121.xlsx
 
@@ -60,7 +60,7 @@ python stock_monitor.py --csv  # 同時輸出 CSV
 python backfill_stock.py --codes 6669 6223 --days 20 --date 20260226
 
 # 將回補資料直接併入每天已存在的 monitor_xlsx/YYYYMMDD.xlsx 中
-python backfill_stock.py --codes 3138 --days 20 --date 20260302 --merge
+python backfill_stock.py --codes 2345 --days 30 --date 20260310 --merge
 ```
 
 ---
@@ -102,8 +102,15 @@ python risk_monitor.py
 # 多日歷史統計
 python risk_monitor_history.py 20260205
 
-# 批量轉換  Excel 轉 JSON (給AI 分析用)
+# 維持原本用法，但現在會同時產出 json/ 跟 txt/
+python excel_to_json.py monitor_xlsx/20260205.xlsx
+
+# 批量執行時也會一併產出所有 txt for notebooklm
 python excel_to_json.py
+
+# 若你想單獨把某個現有的 json 轉為 txt，可使用新參數
+python excel_to_json.py --json2txt json/20260205.json
+
 ```
 
 ## 注意事項

@@ -98,10 +98,61 @@ def convert_excel_to_json(input_path: str, output_path: str = None, indent: int 
             
         print(f"[SUCCESS] 轉換完成！已儲存至: {output_path}")
         
+        # 轉換為 TXT
+        convert_json_to_txt(output_path)
+        
     except Exception as e:
         print(f"[ERROR] 轉換失敗: {e}")
         import traceback
         traceback.print_exc()
+
+def convert_json_to_txt(json_path: str, output_path: str = None):
+    """
+    將 JSON 檔案轉換為純文字 TXT 格式
+    """
+    if not os.path.exists(json_path):
+        print(f"[ERROR] 找不到 JSON 檔案: {json_path}")
+        return
+
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        if not output_path:
+            output_dir = 'txt'
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            base_name = os.path.splitext(os.path.basename(json_path))[0]
+            output_path = os.path.join(output_dir, f"{base_name}.txt")
+        else:
+            output_dir = os.path.dirname(output_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            if isinstance(data, dict):
+                for sheet_name, sheet_data in data.items():
+                    f.write(f"=== {sheet_name} ===\n")
+                    if isinstance(sheet_data, list):
+                        for row in sheet_data:
+                            if isinstance(row, dict):
+                                row_str = ", ".join([f"{k}: {v}" for k, v in row.items() if v is not None])
+                                f.write(f"- {row_str}\n")
+                            elif isinstance(row, list):
+                                row_str = ", ".join([str(x) for x in row if x is not None])
+                                f.write(f"- {row_str}\n")
+                            else:
+                                f.write(f"- {row}\n")
+                    else:
+                        f.write(f"{sheet_data}\n")
+                    f.write("\n")
+            else:
+                f.write(json.dumps(data, ensure_ascii=False, indent=2))
+                
+        print(f"[SUCCESS] TXT 轉換完成！已儲存至: {output_path}")
+        
+    except Exception as e:
+        print(f"[ERROR] TXT 轉換失敗: {e}")
 
 def batch_convert(input_dir: str = 'monitor_xlsx', output_dir: str = 'json', force: bool = False):
     """
@@ -144,8 +195,19 @@ def batch_convert(input_dir: str = 'monitor_xlsx', output_dir: str = 'json', for
             json_mtime = os.path.getmtime(output_path)
             
             if xlsx_mtime <= json_mtime:
-                print(f"[SKIP] {xlsx_file} (JSON 已存在且為最新)")
-                skipped_count += 1
+                # 檢查對應的 TXT 是否存在且最新
+                txt_path = os.path.join('txt', f"{base_name}.txt")
+                if os.path.exists(txt_path):
+                    txt_mtime = os.path.getmtime(txt_path)
+                    if json_mtime <= txt_mtime:
+                        print(f"[SKIP] {xlsx_file} (JSON 與 TXT 皆已存在且為最新)")
+                        skipped_count += 1
+                        continue
+                
+                # 如 JSON 存在但 TXT 遺失或較舊，進行補轉
+                print(f"[INFO] {xlsx_file} (補轉 TXT...)")
+                convert_json_to_txt(output_path)
+                converted_count += 1
                 continue
         
         convert_excel_to_json(input_path, output_path)
@@ -169,16 +231,22 @@ def main():
   
   # 轉換單一檔案
   python excel_to_json.py monitor_xlsx/20260205.xlsx
+  
+  # 將 json 轉為 txt
+  python excel_to_json.py --json2txt json/20260205.json
         """
     )
     parser.add_argument('input', nargs='?', help='輸入的 Excel 檔案路徑 (.xlsx)，不指定則批量轉換')
     parser.add_argument('--output', '-o', help='輸出的 JSON 檔案路徑 (選填)')
     parser.add_argument('--indent', type=int, default=2, help='JSON 縮排 (預設: 2)')
     parser.add_argument('--force', '-f', action='store_true', help='強制重新轉換所有檔案')
+    parser.add_argument('--json2txt', help='將指定的 JSON 檔案轉為 TXT')
     
     args = parser.parse_args()
     
-    if args.input:
+    if args.json2txt:
+        convert_json_to_txt(args.json2txt)
+    elif args.input:
         # 單一檔案模式
         convert_excel_to_json(args.input, args.output, args.indent)
     else:
