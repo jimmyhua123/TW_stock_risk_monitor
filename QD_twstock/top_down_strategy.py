@@ -18,6 +18,13 @@ import yfinance as yf
 warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
+# 加入上一層目錄以便引用 trading_calendar
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from trading_calendar import get_calendar
+except ImportError:
+    pass
+
 def get_recent_trading_days(days=5, base_date=None):
     """取得最近 N 天的台股交易日格式 (排除週末)
     若有提供 base_date (datetime.datetime 物件)，則以該日為基準"""
@@ -27,13 +34,21 @@ def get_recent_trading_days(days=5, base_date=None):
         today = datetime.datetime.now()
         if today.hour < 15: # 下午 15:00 前視為抓取上一個交易日
             today -= datetime.timedelta(days=1)
-        
-    trading_days = []
-    current_date = today
-    while len(trading_days) < days:
-        if current_date.weekday() < 5:  # 0-4 為週一至週五
-            trading_days.append(current_date)
-        current_date -= datetime.timedelta(days=1)
+            
+    try:
+        target_date_str = today.strftime('%Y%m%d')
+        cal = get_calendar()
+        trading_days_str = cal.get_previous_trading_days(target_date_str, days)
+        # 反轉順序以符合原本回傳格式 (由新到舊)
+        trading_days = [datetime.datetime.strptime(d, '%Y%m%d') for d in reversed(trading_days_str)]
+    except Exception as e:
+        logging.warning(f"使用交易日曆失敗({e})，退回基本日期推算")
+        trading_days = []
+        current_date = today
+        while len(trading_days) < days:
+            if current_date.weekday() < 5:  # 0-4 為週一至週五
+                trading_days.append(current_date)
+            current_date -= datetime.timedelta(days=1)
     
     return [d.strftime('%Y%m%d') for d in trading_days], [d.strftime('%Y/%m/%d') for d in trading_days], [(d.year-1911, d.month, d.day) for d in trading_days]
 

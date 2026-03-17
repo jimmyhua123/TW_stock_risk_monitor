@@ -13,30 +13,7 @@ from io import StringIO
 from typing import Dict, Any, List
 
 
-def get_previous_trading_days(target_date_str: str, num_days: int, buffer_days: int = 15) -> List[str]:
-    """
-    取得往前推 N 個交易日的日期清單（跳過週末）
-    會額外加上緩衝天數，確保即使有假日也能獲得足夠數據
-    
-    Args:
-        target_date_str: 目標日期字串 YYYYMMDD
-        num_days: 需要的交易日數量
-        buffer_days: 額外的緩衝天數（預設15天，用於處理市場假日）
-    Returns:
-       交易日期清單 [YYYYMMDD, ...]，長度為 num_days + buffer_days
-    """
-    target_date = datetime.strptime(target_date_str, '%Y%m%d')
-    trading_days = []
-    current = target_date
-    
-    # 抓取 num_days + buffer_days 個工作日，確保有足夠的候選日期
-    while len(trading_days) < (num_days + buffer_days):
-        if current.weekday() < 5:  # 0=週一, 4=週五
-            trading_days.append(current.strftime('%Y%m%d'))
-        current -= timedelta(days=1)
-    
-    return list(reversed(trading_days))
-
+from trading_calendar import get_previous_trading_days
 
 class HistoricalDataFetcher:
     """歷史數據抓取器"""
@@ -55,11 +32,11 @@ class HistoricalDataFetcher:
         Returns:
             包含歷史統計的字典
         """
-        # 使用緩衝天數確保獲得足夠數據（即使遇到假日）
-        trading_days = get_previous_trading_days(self.date_str, num_days, buffer_days=15)
+        # 使用真實交易日曆確保獲得精確天數
+        trading_days = get_previous_trading_days(self.date_str, num_days)
         history = {'foreign': [], 'trust': [], 'total': []}
         
-        print(f"[INFO] 抓取過去 {num_days} 個交易日的三大法人數據（含緩衝：共嘗試 {len(trading_days)} 天）...")
+        print(f"[INFO] 抓取過去 {num_days} 個交易日的三大法人數據（共嘗試 {len(trading_days)} 天）...")
         
         for i, date in enumerate(trading_days):
             try:
@@ -95,11 +72,11 @@ class HistoricalDataFetcher:
     
     def fetch_margin_history(self, num_days: int = 20) -> Dict[str, Any]:
         """抓取多日融資融券數據並計算統計值"""
-        # 使用緩衝天數確保獲得足夠數據
-        trading_days = get_previous_trading_days(self.date_str, num_days, buffer_days=15)
+        # 使用真實交易日曆確保獲得精確天數
+        trading_days = get_previous_trading_days(self.date_str, num_days)
         margin_changes = []
         
-        print(f"[INFO] 抓取過去 {num_days} 個交易日的融資融券數據（含緩衝：共嘗試 {len(trading_days)} 天）...")
+        print(f"[INFO] 抓取過去 {num_days} 個交易日的融資融券數據（共嘗試 {len(trading_days)} 天）...")
         
         for i, date in enumerate(trading_days):
             try:
@@ -186,11 +163,11 @@ class HistoricalDataFetcher:
     
     def fetch_futures_history(self, num_days: int = 5) -> Dict[str, Any]:
         """抓取多日外資期貨淨部位並計算統計值"""
-        # 5 日數據使用較小的緩衝天數
-        trading_days = get_previous_trading_days(self.date_str, num_days, buffer_days=5)
+        # 使用真實交易日曆確保獲得精確天數
+        trading_days = get_previous_trading_days(self.date_str, num_days)
         futures_positions = []
         
-        print(f"[INFO] 抓取過去 {num_days} 個交易日的外資期貨淨部位（含緩衝：共嘗試 {len(trading_days)} 天）...")
+        print(f"[INFO] 抓取過去 {num_days} 個交易日的外資期貨淨部位（共嘗試 {len(trading_days)} 天）...")
         
         for i, date in enumerate(trading_days):
             try:
