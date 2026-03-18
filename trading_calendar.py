@@ -83,7 +83,7 @@ class TradingCalendar:
             
         return self.trading_days
 
-    def get_previous_trading_days(self, target_date_str: str, num_days: int) -> List[str]:
+    def get_previous_trading_days(self, target_date_str: str, num_days: int, buffer_days: int = 0) -> List[str]:
         """
         取得往回推 N 個實際交易日的日期清單
         
@@ -143,10 +143,10 @@ def get_calendar() -> TradingCalendar:
         _calendar_instance.update_calendar()
     return _calendar_instance
 
-def get_previous_trading_days(target_date_str: str, num_days: int) -> List[str]:
+def get_previous_trading_days(target_date_str: str, num_days: int, buffer_days: int = 0) -> List[str]:
     """快捷函數，直接調用全域日曆實例"""
     cal = get_calendar()
-    return cal.get_previous_trading_days(target_date_str, num_days)
+    return cal.get_previous_trading_days(target_date_str, num_days, buffer_days=buffer_days)
 
 if __name__ == '__main__':
     cal = TradingCalendar()
