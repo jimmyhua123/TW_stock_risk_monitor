@@ -9,36 +9,41 @@ import yfinance as yf
 import pandas as pd
 import json
 import os
+import requests
 from datetime import datetime, timedelta
 from typing import List, Optional
 
 class TradingCalendar:
     """交易日曆管理器"""
     
-    def __init__(self, cache_file: str = "trading_days.json"):
+    def __init__(self, cache_file: str = "trading_days.json", holiday_cache_file: str = "twse_holidays.json"):
         # 取得當前檔案所在目錄的絕對路徑
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.cache_file = os.path.join(current_dir, cache_file)
-        self.trading_days = self._load_cache()
+        self.holiday_cache_file = os.path.join(current_dir, holiday_cache_file)
+        self.trading_days = self._load_cache(self.cache_file)
+        self.twse_holidays = self._load_cache(self.holiday_cache_file)
     
-    def _load_cache(self) -> List[str]:
+    def _load_cache(self, filepath: Optional[str] = None) -> List[str]:
         """從本地讀取交易日快取"""
-        if os.path.exists(self.cache_file):
+        target_file = filepath if filepath else self.cache_file
+        if os.path.exists(target_file):
             try:
-                with open(self.cache_file, 'r', encoding='utf-8') as f:
+                with open(target_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except Exception as e:
-                print(f"[WARNING] 讀取交易日快取失敗: {e}")
+                print(f"[WARNING] 讀取快取失敗 ({target_file}): {e}")
         return []
         
-    def _save_cache(self, days: List[str]):
+    def _save_cache(self, days: List[str], filepath: Optional[str] = None):
         """將交易日儲存至本地快取"""
+        target_file = filepath if filepath else self.cache_file
         try:
-            with open(self.cache_file, 'w', encoding='utf-8') as f:
+            with open(target_file, 'w', encoding='utf-8') as f:
                 json.dump(days, f, indent=2)
-            # print(f"[INFO] 成功儲存 {len(days)} 筆交易日至快取: {self.cache_file}")
+            # print(f"[INFO] 成功儲存 {len(days)} 筆資料至快取: {target_file}")
         except Exception as e:
-            print(f"[ERROR] 儲存交易日快取失敗: {e}")
+            print(f"[ERROR] 儲存快取失敗 ({target_file}): {e}")
             
     def update_calendar(self, years_back: int = 10, force: bool = False):
         """
@@ -109,6 +114,23 @@ class TradingCalendar:
                  current -= timedelta(days=1)
              return list(reversed(days))
 
+        # 智慧判斷：如果 target_date_str <= 今天，且不包含在 trading_days 內
+        # 我們檢查它是否為週末或國定假日，如果都不是，代表它應該要有資料，我們就強制更新
+        today_str = datetime.now().strftime('%Y%m%d')
+        if target_date_str <= today_str and target_date_str not in self.trading_days:
+            try:
+                dt = datetime.strptime(target_date_str, '%Y%m%d')
+                is_weekend = dt.weekday() >= 5
+                
+                if not is_weekend:
+                    holidays = self._fetch_twse_holidays()
+                    is_holiday = target_date_str in holidays
+                    if not is_holiday:
+                        print(f"[INFO] 目標日期 {target_date_str} 疑似為新的交易日且尚未快取，強制向 Yahoo Finance 更新最新資料...")
+                        self.update_calendar(force=True)
+            except ValueError:
+                pass
+
         # 篩選出所有小於等於 target_date_str 的交易日
         valid_days = [d for d in self.trading_days if d <= target_date_str]
         
@@ -132,6 +154,78 @@ class TradingCalendar:
             
         return result
 
+    def _fetch_twse_holidays(self) -> List[str]:
+        """從 TWSE OpenAPI 獲取當年度休假日"""
+        if self.twse_holidays and len(self.twse_holidays) > 0:
+            return self.twse_holidays
+        
+        url = "https://openapi.twse.com.tw/v1/holidaySchedule/holidaySchedule"
+        try:
+            res = requests.get(url, timeout=10)
+            data = res.json()
+            holidays = []
+            for item in data:
+                date_str = item.get("Date", "")
+                # TWSE 格式通常是民國年，例如 1150101 (長度7)
+                if len(date_str) == 7:
+                    roc_year = int(date_str[:3])
+                    gregorian_year = roc_year + 1911
+                    gregorian_date = f"{gregorian_year}{date_str[3:]}"
+                    holidays.append(gregorian_date)
+                elif len(date_str) == 6:
+                    roc_year = int(date_str[:2])
+                    gregorian_year = roc_year + 1911
+                    gregorian_date = f"{gregorian_year}{date_str[2:]}"
+                    holidays.append(gregorian_date)
+            
+            # 若今年有特殊補班日 (週六開市)，未來可擴充於此，但TWSE近期已少見補班開市
+            
+            self.twse_holidays = sorted(list(set(holidays)))
+            self._save_cache(self.twse_holidays, self.holiday_cache_file)
+            return self.twse_holidays
+        except Exception as e:
+            print(f"[ERROR] 無法取得 TWSE 休假日曆: {e}")
+            return []
+
+    def get_future_trading_days(self, target_date_str: str, num_days: int) -> List[str]:
+        """
+        取得從目標日期開始往後推的 N 個實際交易日的日期清單 (包含目標日若本身為交易日)
+        
+        Args:
+            target_date_str: 目標日期字串 YYYYMMDD
+            num_days: 需要的交易日數量
+            
+        Returns:
+            實際交易日期清單 [YYYYMMDD, ...]
+        """
+        holidays = self._fetch_twse_holidays()
+        try:
+            target_date = datetime.strptime(target_date_str, '%Y%m%d')
+        except ValueError:
+             print(f"[ERROR] 目標日期格式錯誤: {target_date_str}")
+             return []
+             
+        days = []
+        current = target_date
+        
+        # 為了避免無窮迴圈，設一個上限 (如 365天)
+        max_iterations = num_days * 3 + 30 
+        iterations = 0
+        
+        while len(days) < num_days and iterations < max_iterations:
+            current_str = current.strftime('%Y%m%d')
+            # 判斷是否為週末 (0=週一, ..., 5=週六, 6=週日) 或 名列於 TWSE 休假日
+            is_weekend = current.weekday() >= 5
+            is_holiday = current_str in holidays
+            
+            if not is_weekend and not is_holiday:
+                days.append(current_str)
+            
+            current += timedelta(days=1)
+            iterations += 1
+            
+        return days
+
 # 提供統一的單例供其他模組匯入使用
 _calendar_instance = None
 
@@ -148,6 +242,11 @@ def get_previous_trading_days(target_date_str: str, num_days: int, buffer_days: 
     cal = get_calendar()
     return cal.get_previous_trading_days(target_date_str, num_days, buffer_days=buffer_days)
 
+def get_future_trading_days(target_date_str: str, num_days: int) -> List[str]:
+    """快捷函數：取得未來的交易日"""
+    cal = get_calendar()
+    return cal.get_future_trading_days(target_date_str, num_days)
+
 if __name__ == '__main__':
     cal = TradingCalendar()
     cal.update_calendar(force=True)
@@ -160,3 +259,7 @@ if __name__ == '__main__':
     past_date = "20240215" # 剛過完農曆年開市第一天
     days = cal.get_previous_trading_days(past_date, 5)
     print(f"從 {past_date} 往前推 5 個交易日 (應跳過春節): {days}")
+    
+    print("\n=== 測試未來交易日預測 ===")
+    future_days = cal.get_future_trading_days(test_date, 10)
+    print(f"從 {test_date} 往後推 10 個交易日: {future_days}")
