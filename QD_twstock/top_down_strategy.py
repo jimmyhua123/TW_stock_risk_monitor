@@ -602,7 +602,7 @@ def main():
             df_target['今日收盤價'] = df['latest_close'].round(2)
             
             # 報表擴充欄位: 資金流入倍數、區間RS強度
-            df_target['資金流入倍數'] = (df['vol_amount_1d'] / df['avg_vol_amount_5d']).round(2)
+            df_target['資金流入倍數'] = (df['latest_vol_amount'] / df['avg_vol_amount_5d']).round(2)
             df_target['區間 RS 強度(%)'] = df['rs_20d'].round(1)
             
             df_target['今日成交額(萬)'] = (df['latest_vol_amount'] / 10000).astype(int)

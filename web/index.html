@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣股市風險監控與分析</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <header class="glass-panel text-center header-area">
+            <h1 class="gradient-text">台灣股市風險監控與籌碼分析</h1>
+            <p class="subtitle">Multi-Source Data Dashboard</p>
+        </header>
+
+        <!-- Tab 導航列 -->
+        <nav class="tab-nav glass-panel" id="tabNav">
+            <button class="tab-btn active" data-tab="tw" id="tab-tw">
+                <span class="tab-icon">📊</span> 台灣風險總覽
+            </button>
+            <button class="tab-btn" data-tab="global" id="tab-global">
+                <span class="tab-icon">🌍</span> 全球市場與總經
+            </button>
+            <button class="tab-btn" data-tab="reports" id="tab-reports">
+                <span class="tab-icon">💹</span> 美股板塊資金
+            </button>
+            <button class="tab-btn" data-tab="qd" id="tab-qd">
+                <span class="tab-icon">🎯</span> 策略選股報告
+            </button>
+        </nav>
+
+        <!-- 頁面容器 -->
+        <main id="mainContent">
+            <!-- ===== Page 1: 台灣風險 ===== -->
+            <div class="tab-page active" id="page-tw">
+                <div class="page-toolbar glass-panel">
+                    <label>選擇日期：</label>
+                    <select id="tw-date-select" class="date-select"></select>
+                    <span id="tw-status" class="status-text">載入中...</span>
+                </div>
+                <section class="overview-section mb-5">
+                    <h2 class="section-title">市場風險總覽</h2>
+                    <div id="overviewCards" class="cards-grid"></div>
+                </section>
+                <section class="stocks-section">
+                    <h2 class="section-title">自選股籌碼監控</h2>
+                    <div class="table-container glass-panel">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>代號</th><th>名稱</th><th>收盤價</th><th>漲跌幅</th>
+                                    <th>外資當日(張)</th><th>投信當日(張)</th><th>融資增減(張)</th>
+                                    <th>MA20乖離(%)</th><th>籌碼評價</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stocksTableBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ===== Page 2: 全球市場 ===== -->
+            <div class="tab-page" id="page-global">
+                <div class="page-toolbar glass-panel">
+                    <label>選擇日期：</label>
+                    <select id="global-date-select" class="date-select"></select>
+                    <span id="global-status" class="status-text">載入中...</span>
+                </div>
+                <section class="macro-section mb-5">
+                    <h2 class="section-title">美國總經數據</h2>
+                    <div id="macroCards" class="cards-grid"></div>
+                </section>
+                <section class="global-section mb-5">
+                    <h2 class="section-title">全球股匯市與原物料</h2>
+                    <div id="globalMarketContainer" class="global-container"></div>
+                </section>
+            </div>
+
+            <!-- ===== Page 3: 美股板塊資金 (iframe) ===== -->
+            <div class="tab-page" id="page-reports">
+                <div class="page-toolbar glass-panel">
+                    <label>選擇報告：</label>
+                    <select id="reports-date-select" class="date-select"></select>
+                    <span id="reports-status" class="status-text">載入中...</span>
+                </div>
+                <div class="iframe-container glass-panel">
+                    <iframe id="reportIframe" src="" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <!-- ===== Page 4: QD策略選股 ===== -->
+            <div class="tab-page" id="page-qd">
+                <div class="page-toolbar glass-panel">
+                    <label>選擇報告：</label>
+                    <select id="qd-date-select" class="date-select"></select>
+                    <span id="qd-status" class="status-text">載入中...</span>
+                </div>
+                <div class="md-container glass-panel" id="qdContent"></div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

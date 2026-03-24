@@ -13,6 +13,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
+
 # 匯入現有模組
 from risk_monitor import RiskMonitor, get_trading_date
 from risk_monitor_history import HistoricalDataFetcher
@@ -22,7 +24,7 @@ from stock_monitor import StockMonitor
 class IntegratedRiskReport:
     """整合風險報告生成器"""
     
-    def __init__(self, date_str: str, watchlist_path: str = 'watchlist.json'):
+    def __init__(self, date_str: str, watchlist_path: str = 'data/config/watchlist.json'):
         self.date_str = date_str
         self.watchlist_path = watchlist_path
         self.single_day_data = {}
@@ -105,7 +107,7 @@ class IntegratedRiskReport:
         self._create_stock_sheet(ws_stock)
         
         # 確保 monitor_xlsx 目錄存在
-        output_dir = 'monitor_xlsx'
+        output_dir = os.path.join('outputs', 'monitor_xlsx')
         os.makedirs(output_dir, exist_ok=True)
         
         # 組合完整輸出路徑
@@ -258,7 +260,7 @@ class IntegratedRiskReport:
         ws['A1'].alignment = Alignment(horizontal='center')
         
         if not self.stock_data:
-            ws['A3'] = "無個股籌碼資料（請確認 watchlist.json 存在）"
+            ws['A3'] = "無個股籌碼資料（請確認 data/config/watchlist.json 存在）"
             return
         
         # 表頭 (包含進階籌碼指標)
