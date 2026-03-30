@@ -52,23 +52,29 @@ def fetch_intraday_data(watchlist):
             # If there's no trade price yet (z is '-'), try to find an alternative indicating it's just opening without trades yet
             # Sometimes it's better to just show '-' or use 'y' if market closed.
             price = None
-            if z != "-":
-                price = float(z)
-            else:
-                b_prices = msg.get("b", "")
-                a_prices = msg.get("a", "")
-                if b_prices and b_prices != "-":
-                    best_bid = b_prices.split("_")[0]
-                    if best_bid:
-                        price = float(best_bid)
-                elif a_prices and a_prices != "-":
-                    best_ask = a_prices.split("_")[0]
-                    if best_ask:
-                        price = float(best_ask)
+            try:
+                if z != "-":
+                    price = float(z)
+                else:
+                    b_prices = msg.get("b", "")
+                    a_prices = msg.get("a", "")
+                    if b_prices and b_prices != "-":
+                        best_bid = b_prices.split("_")[0]
+                        if best_bid and best_bid != "-":
+                            price = float(best_bid)
+                    elif a_prices and a_prices != "-":
+                        best_ask = a_prices.split("_")[0]
+                        if best_ask and best_ask != "-":
+                            price = float(best_ask)
+            except ValueError:
+                pass
             
             prev_close = None
-            if y != "-":
-                prev_close = float(y)
+            try:
+                if y != "-":
+                    prev_close = float(y)
+            except ValueError:
+                pass
                 
             change_pct = "-"
             if price is not None and prev_close is not None and prev_close > 0:
@@ -114,8 +120,13 @@ def fetch_index_and_futures():
             z = msg.get("z", "-")
             y = msg.get("y", "-")
             
-            price = float(z) if z != "-" else None
-            prev = float(y) if y != "-" else None
+            price = None
+            prev = None
+            try:
+                price = float(z) if z != "-" else None
+                prev = float(y) if y != "-" else None
+            except ValueError:
+                pass
             
             change_pct = "-"
             if price is not None and prev is not None and prev > 0:
@@ -147,9 +158,12 @@ def fetch_index_and_futures():
             
             change_pct = "-"
             if change_rate != "-":
-                change_pct_val = float(change_rate)
-                sign = "🔴 +" if change_pct_val > 0 else "🟢 " if change_pct_val < 0 else ""
-                change_pct = f"{sign}{change_pct_val:.2f}%"
+                try:
+                    change_pct_val = float(change_rate)
+                    sign = "🔴 +" if change_pct_val > 0 else "🟢 " if change_pct_val < 0 else ""
+                    change_pct = f"{sign}{change_pct_val:.2f}%"
+                except ValueError:
+                    pass
                 
             data["TXF"] = {
                 "name": "台指近",
