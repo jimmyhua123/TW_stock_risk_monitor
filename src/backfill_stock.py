@@ -24,15 +24,15 @@ from stock_monitor import StockDataFetcher
 #  Step 1: 取得所有需要的候選交易日
 # ─────────────────────────────────────────────
 
-def get_valid_dates_batch(base_date_str: str, num_days: int, window: int = 5) -> list:
+def get_valid_dates_batch(base_date_str: str, num_days: int, window: int = 5) -> tuple:
     """
-    取得往前推算、已驗證有開市資料的交易日清單。
+    取得往前推算、已驗證有開市資料的交易日清單，並快取驗證時抓到的股價。
 
     會抓取 (num_days + window - 1) 個有效交易日：
       - 最後 num_days 個是「目標輸出日」
       - 前面 (window - 1) 個是計算5日滾動所需的「前綴日」
 
-    回傳：已驗證的交易日清單，舊→新排序。
+    回傳：(已驗證的交易日清單[舊→新], {date: prices_dict} 快取)
     """
     need = num_days + (window - 1)
     # get_previous_trading_days: 包含 base_date 本身，舊→新排序
@@ -45,12 +45,17 @@ def get_valid_dates_batch(base_date_str: str, num_days: int, window: int = 5) ->
 
     print(f"[INFO] 開始驗證開市日，需要 {need} 個有效交易日...")
     valid = []
+    prices_cache = {}  # 驗證時順帶快取，避免 Step 2 重複抓取
+    # 注意：fetch_stock_prices() 內部已有重試機制（最多3次），
+    # 所以這裡只需一次呼叫 — 網路暫時出錯會在內部重試，
+    # 最終仍空回傳才代表真的是假日或無資料。
     for date in candidates:
         if len(valid) >= need:
             break
         fetcher = StockDataFetcher(date)
         prices = fetcher.fetch_stock_prices()
         if prices:
+            prices_cache[date] = prices
             valid.append(date)
             print(f"  [OK] {date} (已驗證 {len(valid)}/{need})")
         else:
@@ -58,30 +63,38 @@ def get_valid_dates_batch(base_date_str: str, num_days: int, window: int = 5) ->
             time.sleep(0.5)
 
     valid.reverse()  # 還原為舊→新
-    return valid
+    return valid, prices_cache
 
 
 # ─────────────────────────────────────────────
 #  Step 2: 批量一次抓取所有日期的原始資料
 # ─────────────────────────────────────────────
 
-def fetch_raw_data_for_all_dates(all_dates: list, codes: list) -> dict:
+def fetch_raw_data_for_all_dates(all_dates: list, codes: list, prices_cache: dict = None) -> dict:
     """
     對 all_dates 中每一天都抓取：
-      - 股價 (prices)
+      - 股價 (prices)：若 prices_cache 中已有，直接複用，不重抓
       - 三大法人 (institutional)
       - 融資融券 (margin)
     只保留 codes 中股票的資料以節省記憶體。
 
     回傳：{ 'YYYYMMDD': { 'prices': {...}, 'institutional': {...}, 'margin': {...} } }
     """
+    if prices_cache is None:
+        prices_cache = {}
     raw = {}
     total = len(all_dates)
     for i, date in enumerate(all_dates):
         print(f"[{i+1}/{total}] 抓取 {date} 資料...")
         fetcher = StockDataFetcher(date)
 
-        prices_all = fetcher.fetch_stock_prices()
+        # 若驗證階段已快取過股價，直接複用（避免重複請求）
+        if date in prices_cache:
+            prices_all = prices_cache[date]
+            print(f"  [快取] {date} 股價已從驗證階段複用，跳過重抓")
+        else:
+            prices_all = fetcher.fetch_stock_prices()
+
         inst_all   = fetcher.fetch_institutional_trading()
         margin_all = fetcher.fetch_margin_trading()
 
@@ -308,8 +321,8 @@ def main():
     base_date = get_trading_date(args.date)
     window    = args.window
 
-    # ── Step 1: 取得 (N + window - 1) 個有效交易日 ──
-    all_valid_dates = get_valid_dates_batch(base_date, args.days, window)
+    # ── Step 1: 取得 (N + window - 1) 個有效交易日，並快取驗證時已抓的股價 ──
+    all_valid_dates, prices_cache = get_valid_dates_batch(base_date, args.days, window)
     if len(all_valid_dates) < window:
         print(f"[ERROR] 找不到足夠的交易日（只找到 {len(all_valid_dates)} 天）")
         return
@@ -318,12 +331,13 @@ def main():
     target_dates = all_valid_dates[-(args.days):]
     print(f"\n[INFO] 目標回補日期: {target_dates[0]} ~ {target_dates[-1]}（共 {len(target_dates)} 天）")
     print(f"[INFO] 含前綴總計抓取: {all_valid_dates[0]} ~ {all_valid_dates[-1]}（共 {len(all_valid_dates)} 天）\n")
+    print(f"[INFO] 驗證階段已快取 {len(prices_cache)} 天股價，批量抓取時將直接複用")
 
-    # ── Step 2: 一次批量抓取所有資料 ──
+    # ── Step 2: 一次批量抓取所有資料（股價優先使用快取）──
     print("=" * 55)
     print(" 批量抓取所有日期原始資料（每日只抓一次）")
     print("=" * 55)
-    raw = fetch_raw_data_for_all_dates(all_valid_dates, args.codes)
+    raw = fetch_raw_data_for_all_dates(all_valid_dates, args.codes, prices_cache)
 
     # ── Step 3: 計算 + 輸出 ──
     standalone_wb = Workbook()

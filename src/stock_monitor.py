@@ -29,10 +29,11 @@ class StockDataFetcher:
     TPEX_BASE_URL = "https://www.tpex.org.tw"
     TAIFEX_BASE_URL = "https://www.taifex.com.tw"
     
-    def __init__(self, date_str: str):
+    def __init__(self, date_str: str, price_cache: dict = None):
         """
         Args:
             date_str: 日期字串，格式 YYYYMMDD
+            price_cache: 可選，預先填入的股價快取（避免重複請求）
         """
         self.date_str = date_str
         self.formatted_date = f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}"
@@ -44,7 +45,7 @@ class StockDataFetcher:
         # 快取資料
         self._institutional_cache = None
         self._margin_cache = None
-        self._price_cache = None
+        self._price_cache = price_cache if price_cache else None
     
     def fetch_institutional_trading(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -335,91 +336,101 @@ class StockDataFetcher:
         if self._price_cache is not None:
             return self._price_cache
             
-        try:
-            # 使用新版 API 端點
-            url = f"{self.TWSE_BASE_URL}/rwd/zh/afterTrading/MI_INDEX"
-            params = {
-                'response': 'json',
-                'date': self.date_str,
-                'type': 'ALLBUT0999'
-            }
-            
-            response = requests.get(url, params=params, timeout=15)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data.get('stat') != 'OK':
-                print(f"[WARNING] 股價 API 返回錯誤: {data.get('stat')}")
-                return {}
-            
-            result = {}
-            
-            # 個股資料在 tables[8] - 每日收盤行情
-            tables = data.get('tables', [])
-            if len(tables) > 8:
-                stock_table = tables[8]
-                for row in stock_table.get('data', []):
-                    if len(row) >= 11:
-                        code = str(row[0]).strip()
-                        
-                        # 只處理數字代號
-                        if not code.isdigit():
-                            continue
-                        
-                        def parse_float(val):
-                            try:
-                                # 移除逗號、HTML標籤、其他符號
-                                clean = str(val).replace(',', '').replace('X', '')
-                                clean = clean.replace('<p style= color:green>', '').replace('<p style= color:red>', '').replace('</p>', '')
-                                clean = clean.replace('+', '').strip()
-                                if clean == '--' or clean == '':
+        MAX_RETRIES = 3
+        last_error = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                # 使用新版 API 端點
+                url = f"{self.TWSE_BASE_URL}/rwd/zh/afterTrading/MI_INDEX"
+                params = {
+                    'response': 'json',
+                    'date': self.date_str,
+                    'type': 'ALLBUT0999'
+                }
+                
+                response = requests.get(url, params=params, timeout=15)
+                response.raise_for_status()
+                data = response.json()
+                
+                if data.get('stat') != 'OK':
+                    # stat 非 OK 通常表示假日或無資料，不需重試
+                    print(f"[WARNING] 股價 API 返回錯誤: {data.get('stat')}")
+                    return {}
+                
+                result = {}
+                
+                # 個股資料在 tables[8] - 每日收盤行情
+                tables = data.get('tables', [])
+                if len(tables) > 8:
+                    stock_table = tables[8]
+                    for row in stock_table.get('data', []):
+                        if len(row) >= 11:
+                            code = str(row[0]).strip()
+                            
+                            # 只處理數字代號
+                            if not code.isdigit():
+                                continue
+                            
+                            def parse_float(val):
+                                try:
+                                    # 移除逗號、HTML標籤、其他符號
+                                    clean = str(val).replace(',', '').replace('X', '')
+                                    clean = clean.replace('<p style= color:green>', '').replace('<p style= color:red>', '').replace('</p>', '')
+                                    clean = clean.replace('+', '').strip()
+                                    if clean == '--' or clean == '':
+                                        return 0.0
+                                    return float(clean)
+                                except:
                                     return 0.0
-                                return float(clean)
-                            except:
-                                return 0.0
-                        
-                        def parse_int(val):
-                            try:
-                                return int(str(val).replace(',', ''))
-                            except:
-                                return 0
-                        
-                        # 欄位: 0代號, 1名稱, 2成交股數, 3成交筆數, 4成交金額,
-                        # 5開盤, 6最高, 7最低, 8收盤, 9漲跌方向, 10漲跌價差, 11-15其他
-                        close = parse_float(row[8])
-                        change_val = parse_float(row[10])
-                        volume = parse_int(row[2]) // 1000  # 股數 -> 張
-                        
-                        # 判斷漲跌方向 (row[9] 包含 color:green 為跌)
-                        if 'green' in str(row[9]):
-                            change_val = -abs(change_val)
-                        
-                        pct_change = 0.0
-                        if close > 0 and (close - change_val) != 0:
-                            pct_change = round((change_val / (close - change_val)) * 100, 2)
-                        
-                        result[code] = {
-                            'name': str(row[1]).strip(),
-                            'market': '上市',
-                            'close': close,
-                            'change': change_val,
-                            'pct_change': pct_change,
-                            'volume': volume,
-                        }
-            
-            self._price_cache = result
-            
-            # 合併 TPEx (上櫃) 資料
-            tpex_data = self._fetch_tpex_prices()
-            result.update(tpex_data)
-            self._price_cache = result
-            
-            return result
-            
-        except Exception as e:
-            print(f"[WARNING] 抓取股價資料失敗: {e}")
-            return {}
-    
+                            
+                            def parse_int(val):
+                                try:
+                                    return int(str(val).replace(',', ''))
+                                except:
+                                    return 0
+                            
+                            # 欄位: 0代號, 1名稱, 2成交股數, 3成交筆數, 4成交金額,
+                            # 5開盤, 6最高, 7最低, 8收盤, 9漲跌方向, 10漲跌價差, 11-15其他
+                            close = parse_float(row[8])
+                            change_val = parse_float(row[10])
+                            volume = parse_int(row[2]) // 1000  # 股數 -> 張
+                            
+                            # 判斷漲跌方向 (row[9] 包含 color:green 為跌)
+                            if 'green' in str(row[9]):
+                                change_val = -abs(change_val)
+                            
+                            pct_change = 0.0
+                            if close > 0 and (close - change_val) != 0:
+                                pct_change = round((change_val / (close - change_val)) * 100, 2)
+                            
+                            result[code] = {
+                                'name': str(row[1]).strip(),
+                                'market': '上市',
+                                'close': close,
+                                'change': change_val,
+                                'pct_change': pct_change,
+                                'volume': volume,
+                            }
+                
+                self._price_cache = result
+                
+                # 合併 TPEx (上櫃) 資料
+                tpex_data = self._fetch_tpex_prices()
+                result.update(tpex_data)
+                self._price_cache = result
+                
+                return result
+                
+            except Exception as e:
+                last_error = e
+                if attempt < MAX_RETRIES:
+                    wait = attempt * 3
+                    print(f"[WARNING] 抓取股價資料失敗 (第{attempt}次): {e}，{wait}秒後重試...")
+                    time.sleep(wait)
+                else:
+                    print(f"[WARNING] 抓取股價資料失敗 (已重試{MAX_RETRIES}次): {last_error}")
+        return {}
+
     def _fetch_tpex_prices(self) -> Dict[str, Dict[str, Any]]:
         """抓取 TPEx (上櫃) 股價資料"""
         try:
@@ -894,28 +905,87 @@ class StockMonitor:
         print(f"[SUCCESS] CSV 報表已儲存至: {output_path}\n")
     
     def _evaluate_chips(self, data: Dict) -> str:
-        """評估籌碼面"""
+        """
+        評估籌碼面（含 Override 強制覆蓋規則）
+
+        Override 優先判斷順序（由高至低）：
+          [P1] 量縮惜售 / 鎖碼偏多   → ⭐強勢偏多 (量縮惜售)
+          [P2] 法人暴力回補 / 強勢反轉 → ⭐強勢偏多 (法人大買)
+          [P3] 無量下跌 / 缺乏買盤   → 🔴弱勢偏空 (無量下跌)
+          [P4] 法人同步撤退 / 籌碼鬆動 → 🔴偏空 (法人齊賣)
+          [P5] 常規狀態               → 執行原始 5日累計評分公式
+        """
+        # ── 取得所需欄位（防 None 保護） ──────────────────────────────────
+        volume      = data.get('volume') or 0          # 當日成交量 (張)
+        volume_5d   = data.get('volume_5d') or 0        # 5日成交量總和 (歷史)
+        pct_change  = data.get('pct_change') or 0.0     # 漲跌幅 (%)
+        foreign_net = data.get('foreign_daily') or 0    # 外資當日買賣超 (張)
+        trust_net   = data.get('trust_daily') or 0      # 投信當日買賣超 (張)
+
+        # 計算 5日均量 (volume_5d 為過去5日史總量 → 除以5)
+        volume_ma5 = (volume_5d / 5) if volume_5d > 0 else None
+
+        # ── [P1] 量縮惜售 / 鎖碼偏多 ────────────────────────────────────────
+        # 條件：成交量 < MA5 × 40% AND 漲幅 > 3% AND 外資+投信合計 >= 0
+        if (
+            volume_ma5 is not None
+            and volume_ma5 > 0
+            and volume < volume_ma5 * 0.40
+            and pct_change > 3.0
+            and (foreign_net + trust_net) >= 0
+        ):
+            return "⭐強勢偏多 (量縮惜售)"
+
+        # ── [P2] 法人暴力回補 / 強勢反轉 ────────────────────────────────────
+        # 條件：外資買超 > 極高門檻（預設 5000 張）AND 漲幅 > 3%
+        FOREIGN_SURGE_THRESHOLD = 5000  # 可依個股特性調整此門檻
+        if (
+            foreign_net > FOREIGN_SURGE_THRESHOLD
+            and pct_change > 3.0
+        ):
+            return "⭐強勢偏多 (法人大買)"
+
+        # ── [P3] 無量下跌 / 缺乏買盤 ────────────────────────────────────────
+        # 條件：成交量 < MA5 × 50% (量萎縮超過 50%) AND 跌幅 > 4%
+        if (
+            volume_ma5 is not None
+            and volume_ma5 > 0
+            and volume < volume_ma5 * 0.50
+            and pct_change < -4.0
+        ):
+            return "🔴弱勢偏空 (無量下跌)"
+
+        # ── [P4] 法人同步撤退 / 籌碼鬆動 ────────────────────────────────────
+        # 條件：外資 < 0 AND 投信 < 0 AND 即使收紅但漲幅 < 2%
+        if (
+            foreign_net < 0
+            and trust_net < 0
+            and pct_change < 2.0
+        ):
+            return "🔴偏空 (法人齊賣)"
+
+        # ── [P5] 常規狀態：執行原始 5日累計評分 ──────────────────────────────
         score = 0
-        
-        # 外資連續買
+
+        # 外資 5 日累計
         if data.get('foreign_5d_sum') and data['foreign_5d_sum'] > 0:
             score += 2
         elif data.get('foreign_5d_sum') and data['foreign_5d_sum'] < 0:
             score -= 2
-        
-        # 投信連續買
+
+        # 投信 5 日累計
         if data.get('trust_5d_sum') and data['trust_5d_sum'] > 0:
             score += 1
         elif data.get('trust_5d_sum') and data['trust_5d_sum'] < 0:
             score -= 1
-        
-        # 融資減少 (籌碼乾淨)
+
+        # 融資 5 日累計（減少=籌碼乾淨 +1，增加=槓桿沉重 -1）
         if data.get('margin_5d_sum') and data['margin_5d_sum'] < 0:
             score += 1
         elif data.get('margin_5d_sum') and data['margin_5d_sum'] > 0:
             score -= 1
-        
-        # 評價
+
+        # 評價標籤
         if score >= 3:
             return "主力積極買進"
         elif score >= 1:

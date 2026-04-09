@@ -25,7 +25,7 @@ cd TW_stock_risk_monitor
 python run_all.py
 
 # 指定日期
-python run_all.py --date 20260407
+python run_all.py --date 20260408
 ```
 
 ### 1. 整合風險報告（推薦）
@@ -93,7 +93,7 @@ python src/stock_monitor.py --date 20260205
 python src/backfill_stock.py --codes 6669 6223 --days 20 --date 20260226
 
 # 將回補資料直接併入每天已存在的 outputs/monitor_xlsx/YYYYMMDD.xlsx 中
-python src/backfill_stock.py --codes 3030 --days 30 --date 20260312 --merge
+python src/backfill_stock.py --codes 2360 --days 30 --date 20260407 --merge
 ```
 
 ---
