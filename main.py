@@ -267,7 +267,7 @@ class IntegratedRiskReport:
         headers = [
             '股票代號', '股票名稱', '市場別', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價',
+            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)',
             '買賣券商差', '籌碼集中度5D(%)', '借券賣出餘額', '短回補天數', 'VWAP20D', 'VWAP乖離(%)', '資料來源'
         ]
         
@@ -283,9 +283,6 @@ class IntegratedRiskReport:
         # 資料行
         row = 4
         for code, data in self.stock_data.items():
-            # 計算籌碼評價
-            chips_score = self._evaluate_chips(data)
-            
             ws.cell(row, 1, data.get('code', ''))
             ws.cell(row, 2, data.get('name', ''))
             ws.cell(row, 3, data.get('market', ''))
@@ -301,16 +298,15 @@ class IntegratedRiskReport:
             ws.cell(row, 13, data.get('margin_5d_sum'))
             ws.cell(row, 14, data.get('lending_daily_change'))
             ws.cell(row, 15, data.get('dist_ma20'))
-            ws.cell(row, 16, chips_score)
             
             # 進階籌碼指標
-            ws.cell(row, 17, data.get('broker_buy_sell_diff'))
-            ws.cell(row, 18, data.get('chip_concentration_5d'))
-            ws.cell(row, 19, data.get('sbl_sell_balance'))
-            ws.cell(row, 20, data.get('short_cover_days'))
-            ws.cell(row, 21, data.get('vwap_20d_approx'))
-            ws.cell(row, 22, data.get('vwap_bias'))
-            ws.cell(row, 23, data.get('data_source', 'N/A'))
+            ws.cell(row, 16, data.get('broker_buy_sell_diff'))
+            ws.cell(row, 17, data.get('chip_concentration_5d'))
+            ws.cell(row, 18, data.get('sbl_sell_balance'))
+            ws.cell(row, 19, data.get('short_cover_days'))
+            ws.cell(row, 20, data.get('vwap_20d_approx'))
+            ws.cell(row, 21, data.get('vwap_bias'))
+            ws.cell(row, 22, data.get('data_source', 'N/A'))
             
             # 條件格式 - 外資買超綠色，賣超紅色
             if data.get('foreign_daily') and data['foreign_daily'] > 0:
@@ -327,109 +323,18 @@ class IntegratedRiskReport:
             # 籌碼集中度顏色
             if data.get('chip_concentration_5d'):
                 if data['chip_concentration_5d'] > 0:
-                    ws.cell(row, 18).font = Font(color="008000")
+                    ws.cell(row, 17).font = Font(color="008000")
                 elif data['chip_concentration_5d'] < 0:
-                    ws.cell(row, 18).font = Font(color="FF0000")
+                    ws.cell(row, 17).font = Font(color="FF0000")
             
             row += 1
         
         # 調整欄寬 (含進階指標欄位)
-        col_widths = [10, 12, 10, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 14, 12, 14, 14, 12, 10, 12, 10]
+        col_widths = [10, 12, 10, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 12, 14, 14, 12, 10, 12, 10]
         for i, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
     
-    def _evaluate_chips(self, data: dict) -> str:
-        """
-        評估籌碼面（含 Override 強制覆蓋規則）
 
-        Override 優先判斷順序（由高至低）：
-          [P1] 量縮惜售 / 鎖碼偏多 → 強勢偏多 (量縮惜售)
-          [P2] 法人暴力回補 / 強勢反轉 → 強勢偏多 (法人大買)
-          [P3] 無量下跌 / 缺乏買盤   → 弱勢偏空 (無量下跌)
-          [P4] 法人同步撤退 / 籌碼鬆動 → 偏空 (法人齊賣)
-          [P5] 常規狀態               → 執行原始評分公式
-        """
-        # ── 取得所需欄位（防 None 保護） ──────────────────────────────────
-        volume       = data.get('volume') or 0          # 當日成交量 (張)
-        volume_5d    = data.get('volume_5d') or 0        # 5日成交量總和 (歷史)
-        pct_change   = data.get('pct_change') or 0.0     # 漲跌幅 (%)
-        foreign_net  = data.get('foreign_daily') or 0    # 外資當日買賣超 (張)
-        trust_net    = data.get('trust_daily') or 0      # 投信當日買賣超 (張)
-
-        # 計算 5日均量 (volume_5d 為過去5日史總量 → 除以5)
-        volume_ma5 = (volume_5d / 5) if volume_5d > 0 else None
-
-        # ── [P1] 量縮惜售 / 鎖碼偏多 ────────────────────────────────────────
-        # 條件：成交量 < MA5 × 40% AND 漲幅 > 3% AND 外資+投信合計 >= 0
-        if (
-            volume_ma5 is not None
-            and volume_ma5 > 0
-            and volume < volume_ma5 * 0.40
-            and pct_change > 3.0
-            and (foreign_net + trust_net) >= 0
-        ):
-            return "⭐強勢偏多 (量縮惜售)"
-
-        # ── [P2] 法人暴力回補 / 強勢反轉 ────────────────────────────────────
-        # 條件：外資買超 > 極高門檻（預設 5000 張）AND 漲幅 > 3%
-        FOREIGN_SURGE_THRESHOLD = 5000  # 可依個股調整此門檻
-        if (
-            foreign_net > FOREIGN_SURGE_THRESHOLD
-            and pct_change > 3.0
-        ):
-            return "⭐強勢偏多 (法人大買)"
-
-        # ── [P3] 無量下跌 / 缺乏買盤 ────────────────────────────────────────
-        # 條件：成交量 < MA5 × 50% (量萎縮超過 50%) AND 跌幅 > 4%
-        if (
-            volume_ma5 is not None
-            and volume_ma5 > 0
-            and volume < volume_ma5 * 0.50
-            and pct_change < -4.0
-        ):
-            return "🔴弱勢偏空 (無量下跌)"
-
-        # ── [P4] 法人同步撤退 / 籌碼鬆動 ────────────────────────────────────
-        # 條件：外資 < 0 AND 投信 < 0 AND 即使收紅但漲幅 < 2%
-        if (
-            foreign_net < 0
-            and trust_net < 0
-            and pct_change < 2.0
-        ):
-            return "🔴偏空 (法人齊賣)"
-
-        # ── [P5] 常規狀態：執行原始 5日累計評分 ──────────────────────────────
-        score = 0
-
-        # 外資 5 日累計
-        if data.get('foreign_5d_sum') and data['foreign_5d_sum'] > 0:
-            score += 2
-        elif data.get('foreign_5d_sum') and data['foreign_5d_sum'] < 0:
-            score -= 2
-
-        # 投信 5 日累計
-        if data.get('trust_5d_sum') and data['trust_5d_sum'] > 0:
-            score += 1
-        elif data.get('trust_5d_sum') and data['trust_5d_sum'] < 0:
-            score -= 1
-
-        # 融資 5 日累計（減少=籌碼乾淨 +1，增加=槓桿沉重 -1）
-        if data.get('margin_5d_sum') and data['margin_5d_sum'] < 0:
-            score += 1
-        elif data.get('margin_5d_sum') and data['margin_5d_sum'] > 0:
-            score -= 1
-
-        # 評價標籤
-        if score >= 3:
-            return "主力積極買進"
-        elif score >= 1:
-            return "偏多"
-        elif score <= -3:
-            return "主力積極賣出"
-        elif score <= -1:
-            return "偏空"
-        else:
-            return "中性"
 
 
 def main():

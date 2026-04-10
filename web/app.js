@@ -163,11 +163,6 @@ function renderStocks(stocksData) {
         const trustClass = trustDaily > 0 ? 'text-danger' : (trustDaily < 0 ? 'text-success' : '');
         const trustStr = trustDaily !== null ? `${trustDaily > 0 ? '+' : ''}${trustDaily}` : '-';
 
-        const score = item['籌碼評價'] || '-';
-        let scoreClass = 'bg-warning text-warning';
-        if (score.includes('買') || score.includes('多')) scoreClass = 'bg-danger text-danger';
-        if (score.includes('賣') || score.includes('空')) scoreClass = 'bg-success text-success';
-
         tr.innerHTML = `
             <td><span class="stock-code">${item['股票代號']}</span></td>
             <td><span class="stock-name">${item['股票名稱'] || '-'}</span></td>
@@ -177,7 +172,6 @@ function renderStocks(stocksData) {
             <td class="${trustClass}">${trustStr}</td>
             <td>${item['融資增減(張)'] !== null ? item['融資增減(張)'] : '-'}</td>
             <td>${item['MA20乖離(%)'] !== null && item['MA20乖離(%)'] !== undefined && !isNaN(item['MA20乖離(%)']) ? `${item['MA20乖離(%)'] > 0 ? '+' : ''}${parseFloat(item['MA20乖離(%)']).toFixed(2)}%` : '-'}</td>
-            <td><span class="chip ${scoreClass}">${score}</span></td>
         `;
         tbody.appendChild(tr);
     });

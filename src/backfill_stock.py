@@ -191,30 +191,18 @@ def compute_stock_data_for_date(
 #  Excel 工具
 # ─────────────────────────────────────────────
 
-def _chips_score(data: dict) -> str:
-    score = 0
-    if data.get('foreign_5d_sum'):
-        score += 2 if data['foreign_5d_sum'] > 0 else -2
-    if data.get('trust_5d_sum'):
-        score += 1 if data['trust_5d_sum'] > 0 else -1
-    if data.get('margin_5d_sum'):
-        score += 1 if data['margin_5d_sum'] < 0 else -1
-    if score >= 3:  return "主力積極買進"
-    if score >= 1:  return "偏多"
-    if score <= -3: return "主力積極賣出"
-    if score <= -1: return "偏空"
-    return "中性"
+
 
 HEADERS = [
     '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
     '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-    '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)', '籌碼評價'
+    '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)'
 ]
 COL_WIDTHS = {
     '股票代號': 10, '股票名稱': 12, '收盤價': 10, '漲跌幅(%)': 10, '成交量(張)': 12,
     '外資當日(張)': 14, '外資5日累計': 14, '投信當日(張)': 14, '投信5日累計': 14,
     '自營商當日(張)': 14, '融資增減(張)': 12, '融資5日累計': 12,
-    '借券增減(張)': 12, 'MA20乖離(%)': 12, '籌碼評價': 12
+    '借券增減(張)': 12, 'MA20乖離(%)': 12
 }
 
 def init_sheet(ws, date_str):
@@ -245,7 +233,6 @@ def write_stock_row(ws, row: int, data: dict):
         data.get('dealer_daily'),
         data.get('margin_daily_change'), data.get('margin_5d_sum'),
         data.get('lending_daily_change'), data.get('dist_ma20'),
-        _chips_score(data),
     ]
     for col, v in enumerate(vals, 1):
         ws.cell(row, col, v)

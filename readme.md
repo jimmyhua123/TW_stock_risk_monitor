@@ -111,10 +111,10 @@ python src/intraday_monitor.py
 
 ```bash
 # 連續取得過去 30 天的整合風險報告
-python src/batch_runner.py --cmd "python main.py --date {0409} --output {0409}.xlsx" --days 30
+python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 30 --end-date 20260409
 
-# 從指定日期往前推 5 天執行
-python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 5 --end-date 20260301
+# 從指定日期往前推 30 天執行
+python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 30 --end-date 20260409
 ```
 
 ---
