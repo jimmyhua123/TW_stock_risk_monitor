@@ -25,7 +25,7 @@ cd TW_stock_risk_monitor
 python run_all.py
 
 # 指定日期
-python run_all.py --date 20260408
+python run_all.py --date 20260409
 ```
 
 ### 1. 整合風險報告（推薦）
@@ -35,7 +35,7 @@ python run_all.py --date 20260408
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260320 --output 20260320.xlsx
+python main.py --date 20260407 --output 20260407.xlsx
 
 python main.py --date 20260121 --output 20260121.xlsx
 ```
@@ -111,7 +111,7 @@ python src/intraday_monitor.py
 
 ```bash
 # 連續取得過去 30 天的整合風險報告
-python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 30
+python src/batch_runner.py --cmd "python main.py --date {0409} --output {0409}.xlsx" --days 30
 
 # 從指定日期往前推 5 天執行
 python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 5 --end-date 20260301
