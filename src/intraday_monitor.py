@@ -5,6 +5,14 @@ import requests
 from datetime import datetime
 from tabulate import tabulate
 
+def safe_float(val, default=None):
+    if val is None or val == "-" or val == "":
+        return default
+    try:
+        return float(str(val).replace(",", ""))
+    except ValueError:
+        return default
+
 def load_watchlist(filepath):
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -19,7 +27,6 @@ def fetch_intraday_data(watchlist):
         return []
 
     # Prepare batch query for both TSE and OTC
-    # TWSE MIS API allows multiple channels separated by '|'
     ex_ch_list = []
     for item in watchlist:
         code = item['code']
@@ -35,71 +42,69 @@ def fetch_intraday_data(watchlist):
         
         msg_array = res_json.get("msgArray", [])
         
-        # Build dictionary for quick lookup
         current_data = {}
         for msg in msg_array:
             code = msg.get("c")
             if not code:
                 continue
-                
-            # z: current price (if "-", use latest trade price or open or previous close)
-            # y: yesterday close
-            # v: accumulated volume
-            z = msg.get("z", "-")
-            y = msg.get("y", "-")
-            v = msg.get("v", "0")
             
-            # If there's no trade price yet (z is '-'), try to find an alternative indicating it's just opening without trades yet
-            # Sometimes it's better to just show '-' or use 'y' if market closed.
-            price = None
-            try:
-                if z != "-":
-                    price = float(z)
-                else:
-                    b_prices = msg.get("b", "")
-                    a_prices = msg.get("a", "")
-                    if b_prices and b_prices != "-":
-                        best_bid = b_prices.split("_")[0]
-                        if best_bid and best_bid != "-":
-                            price = float(best_bid)
-                    elif a_prices and a_prices != "-":
-                        best_ask = a_prices.split("_")[0]
-                        if best_ask and best_ask != "-":
-                            price = float(best_ask)
-            except ValueError:
-                pass
+            # z: current price, y: yesterday close, v: accumulated volume
+            # u: limit up price, w: limit down price
+            z_val = msg.get("z", "-")
+            y_val = msg.get("y", "-")
+            v_val = msg.get("v", "0")
+            u_val = msg.get("u", "-")
+            w_val = msg.get("w", "-")
             
-            prev_close = None
-            try:
-                if y != "-":
-                    prev_close = float(y)
-            except ValueError:
-                pass
-                
+            price = safe_float(z_val)
+            prev_close = safe_float(y_val)
+            limit_up = safe_float(u_val)
+            limit_down = safe_float(w_val)
+            
+            # If z is missing (common when locked at limit up/down with no trades yet)
+            # fallback to best bid/ask
+            if price is None or price <= 0:
+                b_prices = msg.get("b", "")
+                a_prices = msg.get("a", "")
+                if b_prices and b_prices != "-":
+                    price = safe_float(b_prices.split("_")[0])
+                elif a_prices and a_prices != "-":
+                    price = safe_float(a_prices.split("_")[0])
+            
+            # Avoid 0.0 price unless it's genuinely 0 (not possible for stocks)
+            if price is not None and price <= 0:
+                price = None
+
+            # Skip placeholders that have no valid price/prev_close/volume
+            if price is None and prev_close is None and v_val == "0":
+                continue
+
             change_pct = "-"
-            if price is not None and prev_close is not None and prev_close > 0:
-                change_pct_val = ((price - prev_close) / prev_close) * 100
-                # color formatting based on change
-                color_prefix = ""
-                color_suffix = ""
-                if change_pct_val > 0:
-                    sign = "🔴 +"
-                elif change_pct_val < 0:
-                    sign = "🟢 "
-                else:
-                    sign = ""
-                change_pct = f"{sign}{change_pct_val:.2f}%"
-            elif price is None and prev_close is not None:
-                # no trades yet
-                change_pct = "0.00%"
+            status_indicator = ""
             
-            price_str = str(price) if price is not None else "-"
+            if price is not None and prev_close is not None and prev_close > 0:
+                # Detect Limit Up/Down
+                if limit_up and price >= limit_up:
+                    status_indicator = " 🏆[漲停]"
+                elif limit_down and price <= limit_down:
+                    status_indicator = " 🧊[跌停]"
                 
-            current_data[code] = {
-                "price": price_str,
-                "change_pct": change_pct,
-                "volume": v
-            }
+                change_pct_val = ((price - prev_close) / prev_close) * 100
+                sign = "🔴 +" if change_pct_val > 0 else "🟢 " if change_pct_val < 0 else ""
+                change_pct = f"{sign}{change_pct_val:.2f}%{status_indicator}"
+            elif price is None and prev_close is not None:
+                change_pct = "0.00%"
+
+            price_str = f"{price:.2f}" if price is not None else "-"
+            
+            # Merging logic: Only update if we don't have this code or the new one is more "valid"
+            # (i.e., has a real price/prev_close vs the previous placeholder)
+            if code not in current_data or (price_str != "-" and current_data[code]["price"] == "-"):
+                current_data[code] = {
+                    "price": price_str,
+                    "change_pct": change_pct,
+                    "volume": v_val
+                }
             
         return current_data
         
@@ -120,11 +125,9 @@ def fetch_index_and_futures():
             z = msg.get("z", "-")
             y = msg.get("y", "-")
             
-            price = None
-            prev = None
             try:
-                price = float(z) if z != "-" else None
-                prev = float(y) if y != "-" else None
+                price = safe_float(z)
+                prev = safe_float(y)
             except ValueError:
                 pass
             
@@ -136,7 +139,7 @@ def fetch_index_and_futures():
             
             data["TWII"] = {
                 "name": "加權指數",
-                "price": str(price) if price is not None else "-",
+                "price": f"{price:.2f}" if price is not None else "-",
                 "change_pct": change_pct,
                 "volume": msg.get("v", "-")
             }

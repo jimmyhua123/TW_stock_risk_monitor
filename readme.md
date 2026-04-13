@@ -1,158 +1,96 @@
-# 台灣股市風險監控系統
+# 📈 台灣股市風險監控系統 (TW Stock Risk Monitor)
 
-## 專案結構
-
-此專案已經過重構，結構如下：
-- `src/`：所有的 Python 爬蟲與運算核心程式。
-- `data/`：存放設定檔（如 `config/watchlist.json`）與原始快取資料（如 `raw/trading_days.json`）。
-- `outputs/`：所有的程式產出報告都會集中於此，包含 `json/`、`monitor_xlsx/`、`txt/` 與 `reports/`。
-- `docs/`：存放看盤筆記與圖表等文件。
-- `web/`：視覺化網頁儀表板，用來以 HTML 檢視轉換後的 json 檔案。
-- `main.py`：整合風險報告主要執行入口。
+這是一個全方位的金融監控系統，整合了台灣股市、全球市場、總體經濟數據以及個股籌碼分析。系統自動化擷取多方 API 資料，產出易於閱讀的 Excel 報告、JSON 數據及視覺化網頁儀表板。
 
 ---
 
-## 使用方式
+## 🚀 核心功能與數據範圍
 
-```bash
-cd TW_stock_risk_monitor
-```
+### 1. 🇹🇼 台灣大盤與風險指標
+主要追蹤整體市場的健康狀況與流動性：
+- **指數表現**：加權指數 (TWII)、櫃買指數 (OTC)、台指期貨近月結算價。
+- **籌碼動向**：三大法人（外資、投信、自營商）現貨買賣超金額。
+- **期權籌碼**：選擇權 Put/Call Ratio、外資期貨未平倉口數。
+- **信用交易**：全市場融資融券增減餘額。
+- **情緒指標**：VIX 恐慌指數（換算自台股相關指標）。
 
-### 0. 一鍵執行所有報告 (run_all.py) ⭐ 推薦
-一次產出台灣風險報告 + JSON/TXT + 全球市場與總經數據，統一指定日期：
+### 2. 🌎 全球市場數據
+透過 `yfinance` API 追蹤國際金融脈動：
+- **美股指數**：標普 500、道瓊工業、納斯達克、費城半導體 (SOX)。
+- **歐亞股市**：德國 DAX、法國 CAC40、英國 FTSE、日經 225、南韓 KOSPI、香港恆生、滬深 300 等。
+- **關鍵原物料**：黃金、WTI 原油、銅、白銀、以及農產品（黃豆、玉米、小麥）。
+- **匯率與債券**：10年期美債殖利率 (^TNX)、美元指數 (DXY)、美元/台幣、比特幣 (BTC-USD)。
+
+### 3. 📊 美國總經數據 (FRED)
+直接從美國聖路易斯聯準會 (FRED) 抓取官方權威數據：
+- **失業率** (Unemployment Rate)
+- **通膨率** (CPI YoY)
+- **基準利率** (Fed Funds Rate)
+
+### 4. 🔍 個股籌碼監控 (Individual Stock Analysis)
+針對 `watchlist.json` 中的自選股進行深度分析：
+- **價格與技術面**：收盤價、漲跌幅、成交量、MA20 乖離率。
+- **法人持股變動**：外資、投信、自營商的單日買賣超及 5 日累計買賣超。
+- **信用交易**：個股融資增減（單日及 5 日累計）、個股融券/借券賣出變動。
+- **成交結構**：5 日平均成交量與當日量能對比。
+
+### 5. 🇺🇸 美股板塊資金流向 (Sector Flow)
+追蹤美股 11 大板塊 ETF (XLK, XLF, XLE 等) 的相對強弱：
+- 各板塊相對於 SPY 的資金流向百分比。
+- 板塊輪動趨勢分析（過去 6 個月的走勢）。
+
+---
+
+## 📂 專案結構
+
+- `src/`：所有的 Python 爬蟲與運算核心程式。
+- `data/`：存放設定檔（`watchlist.json`）與原始快取資料。
+- `outputs/`：所有的產出報告（JSON、Excel、TXT、HTML）。
+- `web/`：視覺化網頁儀表板伺服器。
+- `main.py`：整合風險報告主要入口。
+
+---
+
+## 🛠️ 使用方式
+
+### 0. 一鍵執行所有報告 (推薦 ⭐)
 ```bash
-# 使用今天的交易日
+# 生成今日報告
 python run_all.py
 
-# 指定日期
-python run_all.py --date 20260409
+# 生成指定日期報告
+python run_all.py --date 20260410
 ```
 
-### 1. 整合風險報告（推薦）
-一鍵生成包含大盤、歷史統計與個股籌碼的完整 Excel 報告。
+### 1. 整合風險報告 (Excel)
+生成包含大盤、歷史統計與個股籌碼的完整 Excel 報表。
 ```bash
-# 生成今天的報告
-python main.py
-
-# 生成指定日期的報告
-python main.py --date 20260407 --output 20260407.xlsx
-
-python main.py --date 20260121 --output 20260121.xlsx
+python main.py --date 20260410 --output 20260410.xlsx
 ```
+輸出位置：`outputs/monitor_xlsx/`
 
-輸出內容會儲存在 `outputs/monitor_xlsx/` 內：
-- **總覽**：大盤指標（外資、投信、VIX、費半等）
-- **詳細數據**：5日/20日歷史統計
-- **個股籌碼**：自選股的籌碼流向與結構分析
-
----
-
-### 2. 視覺化網頁儀表板 (Web Dashboard)
-本專案包含了一個高質感的多頁面網頁儀表板，可直接瀏覽四類資料：
-1. 確保已經產出近期的報告（透過 `python main.py` 或 `python src/global_market_monitor.py`）。
-2. 啟動本地伺服器：
+### 2. 啟動視覺化網頁儀表板
 ```bash
 python web/server.py
 ```
-3. 瀏覽器開啟 `http://localhost:8080`，即可透過上方 Tab 切換查看：
-   - **台灣風險總覽** (`outputs/json/`)
-   - **全球市場與總經** (`outputs/global_json/`)
-   - **美股板塊資金** (`outputs/reports/`)
-   - **策略選股報告** (`QD_twstock/result/`)
+瀏覽器開啟 `http://localhost:8080` 即可切換查看各類數據圖表。
 
----
-
-### 3. 個股籌碼監控（獨立執行）
+### 3. 個股多日資料回補
 ```bash
-python src/stock_monitor.py
-python src/stock_monitor.py --date 20260205
+# 回補指定股票過去 30 天資料並併入現有報表
+python src/backfill_stock.py --codes 2330 3167 --days 30 --merge
 ```
-
-#### 編輯自選股清單
-修改 `data/config/watchlist.json`，在 `watchlist` 陣列中加入想監控的股票代號與名稱：
-```json
-{
-  "watchlist": [
-    {"code": "2330", "name": "台積電"},
-    {"code": "2454", "name": "聯發科"}
-  ]
-}
-```
-
----
-
-### 4. 個股多日資料回補 (backfill_stock.py)
-專為新加入自選股或想回測特定股票所設計的工具。
-
-**特點：**
-- 自動略過休假日。
-- 支援動態合併至現有報表 (`--merge`)，不會覆蓋或錯置進階欄位。
-
-```bash
-# 產生獨立包含多天資料（按天分頁）的 Excel
-python src/backfill_stock.py --codes 6669 6223 --days 20 --date 20260226
-
-# 將回補資料直接併入每天已存在的 outputs/monitor_xlsx/YYYYMMDD.xlsx 中
-python src/backfill_stock.py --codes 2360 --days 30 --date 20260407 --merge
-```
-
----
-
-### 5. 盤中即時監控 (intraday_monitor.py)
+### 4. 盤中即時監控 (intraday_monitor.py)
 擷取大盤、期貨及自選股(`data/config/watchlist.json`)的最新盤中走勢與漲跌百分比，並將結果自動附加到 `docs/notes/看盤筆記/MMDD.md` 內。
 ```bash
 python src/intraday_monitor.py
 ```
-
 ---
 
-### 6. 批量執行指令工具 (batch_runner.py)
-用來連續多天自動執行帶有日期的指令，自動略過假日，方便一次性抓取多天報告。
+## 💡 特性與注意事項
 
-```bash
-# 連續取得過去 30 天的整合風險報告
-python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 30 --end-date 20260409
-
-# 從指定日期往前推 30 天執行
-python src/batch_runner.py --cmd "python main.py --date {date} --output {date}.xlsx" --days 30 --end-date 20260409
-```
-
----
-
-### 7. 美股 11 大板塊資金流向與輪動分析 (us_sector_funds_flow.py)
-抓取美股 11 大板塊 ETF 與大盤 (SPY) 過去 6 個月的歷史數據。
-```bash
-python src/us_sector_funds_flow.py
-```
-執行後會在 `outputs/reports/` 資料夾下自動生成帶有時間流水號的 HTML 分析報告。
-
----
-
-### 8. 全球市場與總經數據監控 (global_market_monitor.py)
-抓取美國、歐洲、亞太股市指數、原物料、匯率及聯準會 FRED 總經數據。
-```bash
-python src/global_market_monitor.py
-```
-執行後會在 `outputs/global_json/` 與 `outputs/global_xlsx/` 資料夾下生成 `global_market_YYYYMMDD.json` 及 `.xlsx`，生成的 JSON 檔案也可直接拖拉入 Web Dashboard 查看。
-
----
-
-### 其他輔助工具
-```bash
-# 單日風險監控 (僅顯示於終端機)
-python src/risk_monitor.py
-
-# 多日歷史統計
-python src/risk_monitor_history.py 20260205
-
-# 批量執行時也會一併產出所有 txt for notebooklm
-python src/excel_to_json.py
-
-# 若你想單獨把某個現有的 json 轉為 txt，可使用新參數
-python src/excel_to_json.py --json2txt outputs/json/20260205.json
-```
-
-## 注意事項
-1. **資料更新時間**：融資融券餘額通常約 **21:30** 後更新，建議在此之後執行以取得完整數據。
-2. **避免頻繁請求**：證交所 API 有流量限制，過度頻繁執行可能會導致 IP 被鎖定，建議間隔 1-2 小時。
-3. **自訂監控**：隨時可以編輯 `data/config/watchlist.json` 來增減監控的個股。
+- **自動避開假日**：系統會根據市場規則自動判斷交易日。
+- **多格式輸出**：支援 Excel、JSON、TXT (適合 NotebookLM 等 AI 讀取)。
+- **即時監控**：支援 `intraday_monitor.py` 產出盤中筆記。
+- **頻繁請求警告**：證交所 API 有流量限制，建議執行間隔 1 小時以上，避免 IP 被鎖。
+- **更新時間**：台灣融資券餘額通常在 **21:30** 後更新，建議晚上執行以獲取完整數據。
