@@ -1,0 +1,33 @@
+=== Global Markets ===
+  - Category: Americas, Name: 標普500, Price: 6782.81, Change: 2.51%, Date: 04/08
+  - Category: Americas, Name: 道瓊工業, Price: 47909.92, Change: 2.85%, Date: 04/08
+  - Category: Americas, Name: 納斯達克, Price: 22634.99, Change: 2.8%, Date: 04/08
+  - Category: Americas, Name: 費城半導體, Price: 8510.92, Change: 6.34%, Date: 04/08
+  - Category: Europe, Name: 德國DAX, Price: 22921.59, Change: -1.06%, Date: 04/07
+  - Category: Europe, Name: 法國CAC40, Price: 7908.74, Change: -0.67%, Date: 04/07
+  - Category: Europe, Name: 英國FTSE, Price: 10348.8, Change: -0.84%, Date: 04/07
+  - Category: AsiaPacific, Name: 日經225, Price: 56086.73, Change: 4.97%, Date: 04/09
+  - Category: AsiaPacific, Name: 南韓KOSPI, Price: 5847.51, Change: 6.42%, Date: 04/09
+  - Category: AsiaPacific, Name: 台灣加權, Price: 33229.82, Change: 2.02%, Date: 04/07
+  - Category: AsiaPacific, Name: 香港恆生, Price: 25116.53, Change: -0.7%, Date: 04/02
+  - Category: AsiaPacific, Name: 滬深300, Change: nan%, Date: 04/08
+  - Category: AsiaPacific, Name: 澳洲ASX200, Price: 8941.3, Change: 2.43%, Date: 04/09
+  - Category: AsiaPacific, Name: 印度SENSEX, Price: 74616.58, Change: 0.69%, Date: 04/07
+  - Category: Commodities, Name: 黃金, Price: 4739.3, Change: 1.77%, Date: 04/08
+  - Category: Commodities, Name: WTI原油, Price: 97.14, Change: -14.0%, Date: 04/08
+  - Category: Commodities, Name: 銅, Price: 5.74, Change: 3.61%, Date: 04/08
+  - Category: Commodities, Name: 白銀, Price: 74.0, Change: 3.03%, Date: 04/08
+  - Category: Commodities, Name: 黃豆, Price: 1162.75, Change: 0.39%, Date: 04/08
+  - Category: Commodities, Name: 玉米, Price: 447.25, Change: -0.39%, Date: 04/08
+  - Category: Commodities, Name: 小麥, Price: 582.5, Change: -2.59%, Date: 04/08
+  - Category: Rates_Forex, Name: 10年美債(%), Price: 4.29, Change: -5.2bp, Date: 04/08
+  - Category: Rates_Forex, Name: 比特幣, Price: 70724.73, Change: -1.69%, Date: 04/09
+  - Category: Rates_Forex, Name: 美元/台幣, Price: 31.72, Change: -0.55%, Date: 04/09
+  - Category: Rates_Forex, Name: 澳幣/美元, Price: 0.7, Change: -0.57%, Date: 04/09
+  - Category: Rates_Forex, Name: 歐元/美元, Price: 1.17, Change: -0.21%, Date: 04/09
+  - Category: Rates_Forex, Name: 美元/日圓, Price: 158.79, Change: 0.05%, Date: 04/09
+  - Category: Rates_Forex, Name: 美元指數, Price: 99.09, Change: -0.56%, Date: 04/08
+=== Macro Data ===
+  - Indicator: 失業率, Value: 4.3%, Change (pt): -0.1%, Date: 03/01
+  - Indicator: 通膨率 (CPI YoY), Value: 2.66%, Change (pt): -0.16%, Date: 02/01
+  - Indicator: 基準利率, Value: 3.64%, Change (pt): 0.0%, Date: 03/01

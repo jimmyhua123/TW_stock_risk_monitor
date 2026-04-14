@@ -188,22 +188,31 @@ function renderMacro(macroData) {
     container.innerHTML = '';
 
     Object.values(macroData).forEach((item, index) => {
+        if (!item) return;
         const card = document.createElement('div');
         card.className = 'indicator-card fade-in macro-card';
         card.style.animationDelay = `${index * 0.05}s`;
 
-        const valStr = item.price.toFixed(2) + item.unit;
-        let changeStr = item.change > 0 ? `+${item.change.toFixed(2)}` : `${item.change.toFixed(2)}`;
-        if (item.unit === '%') changeStr += ' pt';
+        const price = item.price;
+        const change = item.change;
+        const unit = item.unit || '';
 
+        const valStr = (price !== null && price !== undefined) ? price.toFixed(2) + unit : 'N/A';
+        let changeStr = '-';
         let changeClass = 'text-secondary';
-        if (item.change > 0) changeClass = 'text-success';
-        else if (item.change < 0) changeClass = 'text-danger';
+
+        if (change !== null && change !== undefined) {
+            changeStr = change > 0 ? `+${change.toFixed(2)}` : `${change.toFixed(2)}`;
+            if (unit === '%') changeStr += ' pt';
+
+            if (change > 0) changeClass = 'text-success';
+            else if (change < 0) changeClass = 'text-danger';
+        }
 
         card.innerHTML = `
             <div class="card-header">
-                <p class="card-title font-bold text-white">${item.name}</p>
-                <span class="micro-date">${item.date}</span>
+                <p class="card-title font-bold text-white">${item.name || 'Unknown'}</p>
+                <span class="micro-date">${item.date || '-'}</span>
             </div>
             <div class="card-value">${valStr}</div>
             <div class="card-meta">
@@ -241,17 +250,31 @@ function renderGlobalMarkets(marketData) {
         grid.className = 'market-mini-cards-grid';
 
         marketData[cat].forEach(item => {
+            if (!item) return;
             const card = document.createElement('div');
             card.className = 'market-mini-card text-center';
-            const priceStr = item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            let changeStr = item.change > 0 ? `+${item.change.toFixed(2)}${item.unit}` : `${item.change.toFixed(2)}${item.unit}`;
+
+            const price = item.price;
+            const change = item.change;
+            const unit = item.unit || '';
+
+            // 使用超強防呆，確保 price 是數字且不為 null
+            const priceStr = (price !== null && price !== undefined) 
+                ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+                : '-';
+            
+            let changeStr = '-';
             let changeClass = 'text-secondary';
-            if (item.change > 0) changeClass = 'text-success';
-            else if (item.change < 0) changeClass = 'text-danger';
+
+            if (change !== null && change !== undefined) {
+                changeStr = change > 0 ? `+${change.toFixed(2)}${unit}` : `${change.toFixed(2)}${unit}`;
+                if (change > 0) changeClass = 'text-success';
+                else if (change < 0) changeClass = 'text-danger';
+            }
 
             card.innerHTML = `
-                <div class="mini-name">${item.name}</div>
-                <div class="micro-date">${item.date}</div>
+                <div class="mini-name">${item.name || 'Unknown'}</div>
+                <div class="micro-date">${item.date || '-'}</div>
                 <div class="mini-price">${priceStr}</div>
                 <div class="mini-change ${changeClass}">${changeStr}</div>
             `;
