@@ -25,7 +25,7 @@ cd TW_stock_risk_monitor
 python run_all.py
 
 # 指定日期
-python run_all.py --date 20260413
+python run_all.py --date 20260414
 ```
 
 ### 1. 整合風險報告（推薦）
