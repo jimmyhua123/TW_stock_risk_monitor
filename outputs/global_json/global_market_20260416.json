@@ -1,0 +1,220 @@
+{
+  "Global Markets": [
+    {
+      "Category": "Americas",
+      "Name": "標普500",
+      "Price": 7041.28,
+      "Change": "0.26%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Americas",
+      "Name": "道瓊工業",
+      "Price": 48578.72,
+      "Change": "0.24%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Americas",
+      "Name": "納斯達克",
+      "Price": 24102.7,
+      "Change": "0.36%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Americas",
+      "Name": "費城半導體",
+      "Price": 9329.35,
+      "Change": "0.97%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Europe",
+      "Name": "德國DAX",
+      "Price": 24066.7,
+      "Change": "0.09%",
+      "Date": "04/15"
+    },
+    {
+      "Category": "Europe",
+      "Name": "法國CAC40",
+      "Price": 8274.57,
+      "Change": "-0.64%",
+      "Date": "04/15"
+    },
+    {
+      "Category": "Europe",
+      "Name": "英國FTSE",
+      "Price": 10559.6,
+      "Change": "-0.47%",
+      "Date": "04/15"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "日經225",
+      "Price": 59006.53,
+      "Change": "1.5%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "南韓KOSPI",
+      "Price": 6214.73,
+      "Change": "2.02%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "台灣加權",
+      "Price": 36722.14,
+      "Change": "1.17%",
+      "Date": "04/15"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "香港恆生",
+      "Price": 25947.32,
+      "Change": "0.29%",
+      "Date": "04/15"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "滬深300",
+      "Price": null,
+      "Change": "nan%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "澳洲ASX200",
+      "Price": 8920.4,
+      "Change": "-0.65%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "AsiaPacific",
+      "Name": "印度SENSEX",
+      "Price": 78111.24,
+      "Change": "1.64%",
+      "Date": "04/15"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "黃金",
+      "Price": 4812.4,
+      "Change": "0.26%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "WTI原油",
+      "Price": 90.07,
+      "Change": "-1.34%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "銅",
+      "Price": 6.05,
+      "Change": "-0.3%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "白銀",
+      "Price": 78.74,
+      "Change": "-0.94%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "黃豆",
+      "Price": 1164.25,
+      "Change": "-0.24%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "玉米",
+      "Price": 458.75,
+      "Change": "1.66%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Commodities",
+      "Name": "小麥",
+      "Price": 609.0,
+      "Change": "2.57%",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "10年美債(%)",
+      "Price": 4.31,
+      "Change": "2.7bp",
+      "Date": "04/16"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "比特幣",
+      "Price": 74930.77,
+      "Change": "0.17%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "美元/台幣",
+      "Price": 31.57,
+      "Change": "-0.04%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "澳幣/美元",
+      "Price": 0.72,
+      "Change": "-0.22%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "歐元/美元",
+      "Price": 1.18,
+      "Change": "-0.24%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "美元/日圓",
+      "Price": 159.31,
+      "Change": "0.31%",
+      "Date": "04/17"
+    },
+    {
+      "Category": "Rates_Forex",
+      "Name": "美元指數",
+      "Price": 98.23,
+      "Change": "0.18%",
+      "Date": "04/16"
+    }
+  ],
+  "Macro Data": [
+    {
+      "Indicator": "失業率",
+      "Value": "4.3%",
+      "Change (pt)": "-0.1%",
+      "Date": "03/01"
+    },
+    {
+      "Indicator": "通膨率 (CPI YoY)",
+      "Value": "3.32%",
+      "Change (pt)": "0.66%",
+      "Date": "03/01"
+    },
+    {
+      "Indicator": "基準利率",
+      "Value": "3.64%",
+      "Change (pt)": "0.0%",
+      "Date": "03/01"
+    }
+  ]
+}

@@ -649,14 +649,8 @@ class StockMonitor:
         """抓取過去 5 天資料計算累計"""
         result = {}
         
-        # 取得候選的交易日 (多抓幾天作為緩衝)，並排除當天本身
-        candidate_days = [
-            d for d in get_previous_trading_days(self.date_str, 5, buffer_days=10)
-            if d < self.date_str  # 只取「當天之前」的日期
-        ]
-        # 從最新到最舊依序查找 (candidate_days 目前是舊→新，反轉後新→舊)
-        candidate_days = list(reversed(candidate_days))
-        
+        # Include the report date in the rolling 5-day window.
+        candidate_days = get_previous_trading_days(self.date_str, 5, buffer_days=10)
         # 收集歷史資料
         history_institutional = {}
         history_margin = {}

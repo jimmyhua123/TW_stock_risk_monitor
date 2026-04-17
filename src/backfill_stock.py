@@ -172,6 +172,7 @@ def compute_stock_data_for_date(
     return {
         'code': code,
         'name': name,
+        'market': price_data.get('market', ''),
         'close': close,
         'pct_change': price_data.get('pct_change'),
         'volume': price_data.get('volume'),
@@ -194,15 +195,15 @@ def compute_stock_data_for_date(
 
 
 HEADERS = [
-    '股票代號', '股票名稱', '收盤價', '漲跌幅(%)', '成交量(張)',
-    '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-    '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)'
+    '????', '????', '???', '???', '???(%)', '???(?)',
+    '????(?)', '??5???', '????(?)', '??5???', '?????(?)',
+    '????(?)', '??5???', '????(?)', 'MA20??(%)'
 ]
 COL_WIDTHS = {
-    '股票代號': 10, '股票名稱': 12, '收盤價': 10, '漲跌幅(%)': 10, '成交量(張)': 12,
-    '外資當日(張)': 14, '外資5日累計': 14, '投信當日(張)': 14, '投信5日累計': 14,
-    '自營商當日(張)': 14, '融資增減(張)': 12, '融資5日累計': 12,
-    '借券增減(張)': 12, 'MA20乖離(%)': 12
+    '????': 10, '????': 12, '???': 10, '???': 10, '???(%)': 10, '???(?)': 12,
+    '????(?)': 14, '??5???': 14, '????(?)': 14, '??5???': 14,
+    '?????(?)': 14, '????(?)': 12, '??5???': 12,
+    '????(?)': 12, 'MA20??(%)': 12
 }
 
 def init_sheet(ws, date_str):
@@ -226,8 +227,8 @@ def init_sheet(ws, date_str):
 def write_stock_row(ws, row: int, data: dict):
     """將一筆股票資料寫入指定列"""
     vals = [
-        data.get('code'), data.get('name'), data.get('close'),
-        data.get('pct_change'), data.get('volume'),
+        data.get('code'), data.get('name'), data.get('market', ''),
+        data.get('close'), data.get('pct_change'), data.get('volume'),
         data.get('foreign_daily'), data.get('foreign_5d_sum'),
         data.get('trust_daily'),   data.get('trust_5d_sum'),
         data.get('dealer_daily'),
@@ -240,11 +241,11 @@ def write_stock_row(ws, row: int, data: dict):
     # 顏色：外資
     f = data.get('foreign_daily')
     if f:
-        ws.cell(row, 6).font = Font(color="008000" if f > 0 else "FF0000")
+        ws.cell(row, 7).font = Font(color="008000" if f > 0 else "FF0000")
     # 顏色：漲跌幅
     p = data.get('pct_change')
     if p:
-        ws.cell(row, 4).font = Font(color="FF0000" if p > 0 else "008000")
+        ws.cell(row, 5).font = Font(color="FF0000" if p > 0 else "008000")
 
 
 def upsert_into_existing_sheet(ws, date_str, stock_data_dict: dict):
