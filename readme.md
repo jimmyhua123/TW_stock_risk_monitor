@@ -59,7 +59,7 @@
 python run_all.py
 
 # 生成指定日期報告
-python run_all.py --date 20260420
+python run_all.py --date 20260421
 ```
 
 ### 1. 整合風險報告 (Excel)
@@ -78,7 +78,7 @@ python web/server.py
 ### 3. 個股多日資料回補
 ```bash
 # 回補指定股票過去 30 天資料並併入現有報表
-python src/backfill_stock.py --codes 2330 3167 --days 30 --merge
+python src/backfill_stock.py --codes 2454 3037 8046 --days 30 --merge
 ```
 ### 4. 盤中即時監控 (intraday_monitor.py)
 擷取大盤、期貨及自選股(`data/config/watchlist.json`)的最新盤中走勢與漲跌百分比，並將結果自動附加到 `docs/notes/看盤筆記/MMDD.md` 內。

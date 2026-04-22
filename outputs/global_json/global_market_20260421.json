@@ -3,198 +3,198 @@
     {
       "Category": "Americas",
       "Name": "標普500",
-      "Price": 7126.06,
-      "Change": "1.2%",
-      "Date": "04/17"
+      "Price": 7064.01,
+      "Change": "-0.63%",
+      "Date": "04/21"
     },
     {
       "Category": "Americas",
       "Name": "道瓊工業",
-      "Price": 49447.43,
-      "Change": "1.79%",
-      "Date": "04/17"
+      "Price": 49149.38,
+      "Change": "-0.59%",
+      "Date": "04/21"
     },
     {
       "Category": "Americas",
       "Name": "納斯達克",
-      "Price": 24468.48,
-      "Change": "1.52%",
-      "Date": "04/17"
+      "Price": 24259.96,
+      "Change": "-0.59%",
+      "Date": "04/21"
     },
     {
       "Category": "Americas",
       "Name": "費城半導體",
-      "Price": 9555.88,
-      "Change": "2.43%",
-      "Date": "04/17"
+      "Price": 9647.21,
+      "Change": "0.5%",
+      "Date": "04/21"
     },
     {
       "Category": "Europe",
       "Name": "德國DAX",
-      "Price": 24702.24,
-      "Change": "2.27%",
-      "Date": "04/17"
+      "Price": 24417.8,
+      "Change": "-1.15%",
+      "Date": "04/20"
     },
     {
       "Category": "Europe",
       "Name": "法國CAC40",
-      "Price": 8425.13,
-      "Change": "1.97%",
-      "Date": "04/17"
+      "Price": 8331.05,
+      "Change": "-1.12%",
+      "Date": "04/20"
     },
     {
       "Category": "Europe",
       "Name": "英國FTSE",
-      "Price": 10667.6,
-      "Change": "0.73%",
-      "Date": "04/17"
+      "Price": 10609.1,
+      "Change": "-0.55%",
+      "Date": "04/20"
     },
     {
       "Category": "AsiaPacific",
       "Name": "日經225",
-      "Price": 58803.17,
-      "Change": "0.56%",
-      "Date": "04/20"
+      "Price": 59456.08,
+      "Change": "1.07%",
+      "Date": "04/22"
     },
     {
       "Category": "AsiaPacific",
       "Name": "南韓KOSPI",
-      "Price": 6223.96,
-      "Change": "0.52%",
-      "Date": "04/20"
+      "Price": 6394.76,
+      "Change": "2.82%",
+      "Date": "04/22"
     },
     {
       "Category": "AsiaPacific",
       "Name": "台灣加權",
-      "Price": 36804.34,
-      "Change": "-0.88%",
-      "Date": "04/17"
+      "Price": 36958.8,
+      "Change": "0.42%",
+      "Date": "04/20"
     },
     {
       "Category": "AsiaPacific",
       "Name": "香港恆生",
-      "Price": 26160.33,
-      "Change": "-0.89%",
-      "Date": "04/17"
+      "Price": 26361.07,
+      "Change": "0.77%",
+      "Date": "04/20"
     },
     {
       "Category": "AsiaPacific",
       "Name": "滬深300",
-      "Price": 4728.67,
-      "Change": "-0.17%",
-      "Date": "04/17"
+      "Price": null,
+      "Change": "nan%",
+      "Date": "04/21"
     },
     {
       "Category": "AsiaPacific",
       "Name": "澳洲ASX200",
-      "Price": 8903.5,
-      "Change": "-0.49%",
-      "Date": "04/20"
+      "Price": 8886.6,
+      "Change": "-0.74%",
+      "Date": "04/22"
     },
     {
       "Category": "AsiaPacific",
       "Name": "印度SENSEX",
-      "Price": 78493.54,
-      "Change": "0.65%",
-      "Date": "04/17"
+      "Price": 78520.3,
+      "Change": "0.03%",
+      "Date": "04/20"
     },
     {
       "Category": "Commodities",
       "Name": "黃金",
-      "Price": 4784.4,
-      "Change": "-1.51%",
-      "Date": "04/19"
+      "Price": 4762.9,
+      "Change": "-0.91%",
+      "Date": "04/21"
     },
     {
       "Category": "Commodities",
       "Name": "WTI原油",
-      "Price": 82.59,
-      "Change": "-12.78%",
-      "Date": "04/17"
+      "Price": 89.61,
+      "Change": "0.0%",
+      "Date": "04/21"
     },
     {
       "Category": "Commodities",
       "Name": "銅",
-      "Price": 6.05,
-      "Change": "-0.83%",
-      "Date": "04/19"
+      "Price": 6.03,
+      "Change": "-0.18%",
+      "Date": "04/21"
     },
     {
       "Category": "Commodities",
       "Name": "白銀",
-      "Price": 79.54,
-      "Change": "-2.69%",
-      "Date": "04/19"
+      "Price": 77.49,
+      "Change": "-3.08%",
+      "Date": "04/21"
     },
     {
       "Category": "Commodities",
       "Name": "黃豆",
-      "Price": 1183.0,
-      "Change": "1.35%",
-      "Date": "04/19"
+      "Price": 1190.75,
+      "Change": "2.14%",
+      "Date": "04/21"
     },
     {
       "Category": "Commodities",
       "Name": "玉米",
-      "Price": 451.5,
-      "Change": "0.61%",
-      "Date": "04/19"
+      "Price": 462.0,
+      "Change": "2.21%",
+      "Date": "04/21"
     },
     {
       "Category": "Commodities",
       "Name": "小麥",
-      "Price": 608.5,
-      "Change": "2.92%",
-      "Date": "04/19"
+      "Price": 610.0,
+      "Change": "2.18%",
+      "Date": "04/21"
     },
     {
       "Category": "Rates_Forex",
       "Name": "10年美債(%)",
-      "Price": 4.25,
-      "Change": "-6.3bp",
-      "Date": "04/17"
+      "Price": 4.29,
+      "Change": "4.2bp",
+      "Date": "04/21"
     },
     {
       "Category": "Rates_Forex",
       "Name": "比特幣",
-      "Price": 74335.97,
-      "Change": "-1.84%",
-      "Date": "04/20"
+      "Price": 76324.01,
+      "Change": "0.6%",
+      "Date": "04/22"
     },
     {
       "Category": "Rates_Forex",
       "Name": "美元/台幣",
-      "Price": 31.46,
-      "Change": "-0.3%",
-      "Date": "04/20"
+      "Price": 31.48,
+      "Change": "0.19%",
+      "Date": "04/22"
     },
     {
       "Category": "Rates_Forex",
       "Name": "澳幣/美元",
-      "Price": 0.71,
-      "Change": "-0.16%",
-      "Date": "04/20"
+      "Price": 0.72,
+      "Change": "-0.15%",
+      "Date": "04/22"
     },
     {
       "Category": "Rates_Forex",
       "Name": "歐元/美元",
-      "Price": 1.18,
-      "Change": "-0.2%",
-      "Date": "04/20"
+      "Price": 1.17,
+      "Change": "-0.31%",
+      "Date": "04/22"
     },
     {
       "Category": "Rates_Forex",
       "Name": "美元/日圓",
-      "Price": 158.93,
-      "Change": "-0.17%",
-      "Date": "04/20"
+      "Price": 159.27,
+      "Change": "0.27%",
+      "Date": "04/22"
     },
     {
       "Category": "Rates_Forex",
       "Name": "美元指數",
-      "Price": 98.28,
-      "Change": "0.18%",
-      "Date": "04/19"
+      "Price": 98.33,
+      "Change": "0.29%",
+      "Date": "04/21"
     }
   ],
   "Macro Data": [
