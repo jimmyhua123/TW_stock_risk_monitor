@@ -59,7 +59,7 @@
 python run_all.py
 
 # 生成指定日期報告
-python run_all.py --date 20260421
+python run_all.py --date 20260422
 ```
 
 ### 1. 整合風險報告 (Excel)
