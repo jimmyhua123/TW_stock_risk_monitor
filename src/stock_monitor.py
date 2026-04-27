@@ -17,6 +17,8 @@ from openpyxl.utils import get_column_letter
 from typing import Dict, Any, List, Optional
 from io import StringIO
 import time
+import re
+from bs4 import BeautifulSoup
 
 # 匯入現有模組
 from risk_monitor import get_trading_date
@@ -46,6 +48,7 @@ class StockDataFetcher:
         self._institutional_cache = None
         self._margin_cache = None
         self._price_cache = price_cache if price_cache else None
+        self._warrant_master = None
     
     def fetch_institutional_trading(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -121,6 +124,31 @@ class StockDataFetcher:
             
             self._institutional_cache = result
             
+            # 額外抓取權證 (0999) 三大法人資料
+            try:
+                params['selectType'] = '0999'
+                resp_w = requests.get(url, params=params, timeout=15)
+                if resp_w.status_code == 200:
+                    data_w = resp_w.json()
+                    if data_w.get('stat') == 'OK':
+                        for row in data_w.get('data', []):
+                            if len(row) >= 17:
+                                code = row[0].strip()
+                                result[code] = {
+                                    'name': row[1].strip(),
+                                    'foreign_buy': parse_int(row[2]),
+                                    'foreign_sell': parse_int(row[3]),
+                                    'foreign_net': parse_int(row[4]),
+                                    'trust_buy': parse_int(row[8]),
+                                    'trust_sell': parse_int(row[9]),
+                                    'trust_net': parse_int(row[10]),
+                                    'dealer_buy': parse_int(row[11]) + parse_int(row[14]),
+                                    'dealer_sell': parse_int(row[12]) + parse_int(row[15]),
+                                    'dealer_net': parse_int(row[13]) + parse_int(row[16]),
+                                }
+            except Exception as e:
+                print(f"[WARNING] 抓取權證三大法人資料失敗: {e}")
+
             # 合併 TPEx (上櫃) 資料
             tpex_data = self._fetch_tpex_institutional()
             result.update(tpex_data)
@@ -318,8 +346,131 @@ class StockDataFetcher:
         except Exception as e:
             print(f"[WARNING] 抓取 TPEx 融資融券資料失敗: {e}")
             return {}
+
+    def fetch_warrant_master(self) -> Dict[str, Dict[str, Any]]:
+        """
+        從證交所 OpenAPI 抓取所有權證的基本資料 (履約價、行使比例、到期日)
+        """
+        if self._warrant_master is not None:
+            return self._warrant_master
+            
+        try:
+            # 認購售權證基本資料 (t187ap37_L)
+            url = "https://openapi.twse.com.tw/v1/opendata/t187ap37_L"
+            print(f"[DEBUG] Fetching warrant master from {url}...")
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            print(f"[DEBUG] Received {len(data)} warrant master items")
+            
+            def pick_first(item: Dict[str, Any], *keys: str, default: Any = '') -> Any:
+                for key in keys:
+                    if key in item and item.get(key) not in (None, ''):
+                        return item.get(key)
+                return default
+
+            def parse_float(value: Any) -> float:
+                try:
+                    return float(str(value).replace(',', '').strip() or 0)
+                except Exception:
+                    return 0.0
+
+            result = {}
+            for item in data:
+                code = str(pick_first(item, '權證代號')).strip()
+                if not code:
+                    continue
+                
+                # 到期日處理 (ROC year 1150803 -> 20260803)
+                expiry_roc = str(
+                    pick_first(item, '到期日', '履約截止日', '最後交易日')
+                ).strip()
+                expiry_date = ""
+                if len(expiry_roc) == 7:
+                    year = int(expiry_roc[:3]) + 1911
+                    expiry_date = f"{year}{expiry_roc[3:]}"
+                
+                result[code] = {
+                    'strike_price': parse_float(
+                        pick_first(
+                            item,
+                            '最新履約價格(元)/履約指數',
+                            '最新履約價(元)/指數',
+                        )
+                    ),
+                    'exercise_ratio': parse_float(
+                        pick_first(
+                            item,
+                            '最新標的履約配發數量(每仟單位權證)',
+                            '最新標的履約量(千股/千指數)',
+                            '最新標的履約量(每張權證',
+                        )
+                    ) / 1000.0,
+                    'expiry_date': expiry_date,
+                    'underlying_code': str(
+                        pick_first(item, '標的代號', '標的證券/指數')
+                    ).strip(),
+                    'underlying_name': str(pick_first(item, '標的證券/指數')).strip(),
+                }
+            self._warrant_master = result
+            return result
+        except Exception as e:
+            print(f"[WARNING] 抓取權證基本資料失敗: {e}")
+            return {}
+
+    def fetch_warrant_details(self, wid: str) -> Dict[str, Any]:
+        """
+        從元大權證網抓取權證詳細參數
+        """
+        url = f"https://www.warrantwin.com.tw/eyuanta/Warrant/Info.aspx?WID={wid}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Referer': 'https://www.warrantwin.com.tw/'
+        }
+        
+        try:
+            res = requests.get(url, headers=headers, timeout=10)
+            res.encoding = res.apparent_encoding # 自動偵測編碼 (通常是 utf-8 或 big5)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            
+            details = {}
+            # 增加對應標籤，排除可能誤導的註解部分
+            mapping = {
+                '最新履約價': 'strike_price',
+                '最新行使比例': 'exercise_ratio',
+                '到期日期': 'expiry_date',
+                '剩餘天數': 'days_to_expiry',
+                '價內外程度': 'moneyness',
+                '買賣價差比': 'bid_ask_spread_pct',
+                '實質槓桿': 'effective_leverage',
+                '買價隱波': 'implied_volatility',
+                '流通在外張數/比例': 'outstanding_info'
+            }
+            
+            # 專門尋找「基本資料」區塊或直接找關鍵字
+            # 遍歷所有包含文字的標籤
+            for element in soup.find_all(['span', 'li', 'td', 'div']):
+                text = element.get_text(strip=True)
+                for label, key in mapping.items():
+                    if label in text and key not in details:
+                        # 排除掉只有標籤本身的長度
+                        if len(text) > len(label):
+                            val = text.replace(label, '').replace(':', '').strip()
+                            if val:
+                                details[key] = val
+            
+            # 處理流通在外比例 %
+            if 'outstanding_info' in details:
+                match = re.search(r'([\d.]+)%', details['outstanding_info'])
+                if match:
+                    details['outstanding_pct'] = match.group(1)
+            
+            return details
+        except Exception as e:
+            print(f"[WARNING] 抓取權證 {wid} 詳細資料失敗: {e}")
+            return {}
     
-    def fetch_stock_prices(self) -> Dict[str, Dict[str, Any]]:
+    def fetch_stock_prices(self, include_warrants: bool = True) -> Dict[str, Dict[str, Any]]:
         """
         抓取個股收盤行情
         Returns:
@@ -348,7 +499,7 @@ class StockDataFetcher:
                     'type': 'ALLBUT0999'
                 }
                 
-                response = requests.get(url, params=params, timeout=15)
+                response = requests.get(url, params=params, timeout=30)
                 response.raise_for_status()
                 data = response.json()
                 
@@ -359,58 +510,113 @@ class StockDataFetcher:
                 
                 result = {}
                 
-                # 個股資料在 tables[8] - 每日收盤行情
+                # 嘗試從多個表格抓取收盤行情 (Table 8 為個股, Table 9 為權證)
                 tables = data.get('tables', [])
-                if len(tables) > 8:
-                    stock_table = tables[8]
-                    for row in stock_table.get('data', []):
-                        if len(row) >= 11:
-                            code = str(row[0]).strip()
-                            
-                            # 只處理數字代號
-                            if not code.isdigit():
-                                continue
-                            
-                            def parse_float(val):
-                                try:
-                                    # 移除逗號、HTML標籤、其他符號
-                                    clean = str(val).replace(',', '').replace('X', '')
-                                    clean = clean.replace('<p style= color:green>', '').replace('<p style= color:red>', '').replace('</p>', '')
-                                    clean = clean.replace('+', '').strip()
-                                    if clean == '--' or clean == '':
-                                        return 0.0
-                                    return float(clean)
-                                except:
-                                    return 0.0
-                            
-                            def parse_int(val):
-                                try:
-                                    return int(str(val).replace(',', ''))
-                                except:
-                                    return 0
-                            
-                            # 欄位: 0代號, 1名稱, 2成交股數, 3成交筆數, 4成交金額,
-                            # 5開盤, 6最高, 7最低, 8收盤, 9漲跌方向, 10漲跌價差, 11-15其他
-                            close = parse_float(row[8])
-                            change_val = parse_float(row[10])
-                            volume = parse_int(row[2]) // 1000  # 股數 -> 張
-                            
-                            # 判斷漲跌方向 (row[9] 包含 color:green 為跌)
-                            if 'green' in str(row[9]):
-                                change_val = -abs(change_val)
-                            
-                            pct_change = 0.0
-                            if close > 0 and (close - change_val) != 0:
-                                pct_change = round((change_val / (close - change_val)) * 100, 2)
-                            
-                            result[code] = {
-                                'name': str(row[1]).strip(),
-                                'market': '上市',
-                                'close': close,
-                                'change': change_val,
-                                'pct_change': pct_change,
-                                'volume': volume,
-                            }
+                
+                def parse_float(val):
+                    try:
+                        clean = str(val).replace(',', '').replace('X', '')
+                        clean = clean.replace('<p style= color:green>', '').replace('<p style= color:red>', '').replace('</p>', '')
+                        clean = clean.replace('+', '').strip()
+                        if clean == '--' or clean == '':
+                            return 0.0
+                        return float(clean)
+                    except:
+                        return 0.0
+
+                def parse_int(val):
+                    try:
+                        return int(str(val).replace(',', ''))
+                    except:
+                        return 0
+
+                def process_table(table_data):
+                    fields = table_data.get('fields', [])
+                    field_idx = {str(name).strip(): idx for idx, name in enumerate(fields)}
+
+                    def idx_of(*names: str) -> Optional[int]:
+                        for name in names:
+                            if name in field_idx:
+                                return field_idx[name]
+                        return None
+
+                    code_idx = idx_of('證券代號')
+                    name_idx = idx_of('證券名稱')
+                    volume_idx = idx_of('成交股數')
+                    close_idx = idx_of('收盤價')
+                    sign_idx = idx_of('漲跌(+/-)')
+                    change_idx = idx_of('漲跌價差')
+                    bid_idx = idx_of('最後揭示買價')
+                    ask_idx = idx_of('最後揭示賣價')
+                    underlying_code_idx = idx_of('標的代號')
+                    underlying_price_idx = idx_of('標的收盤價/指數')
+
+                    if None in (code_idx, name_idx, volume_idx, close_idx, sign_idx, change_idx):
+                        return
+
+                    for row in table_data.get('data', []):
+                        if len(row) <= max(code_idx, name_idx, volume_idx, close_idx, sign_idx, change_idx):
+                            continue
+
+                        code = str(row[code_idx]).strip()
+                        if not code.isdigit():
+                            continue
+
+                        close = parse_float(row[close_idx])
+                        change_val = parse_float(row[change_idx])
+                        volume = parse_int(row[volume_idx]) // 1000  # 股數 -> 張
+
+                        if 'green' in str(row[sign_idx]):
+                            change_val = -abs(change_val)
+
+                        pct_change = 0.0
+                        if close > 0 and (close - change_val) != 0:
+                            pct_change = round((change_val / (close - change_val)) * 100, 2)
+
+                        result[code] = {
+                            'name': str(row[name_idx]).strip(),
+                            'market': '上市',
+                            'close': close,
+                            'change': change_val,
+                            'pct_change': pct_change,
+                            'volume': volume,
+                        }
+
+                        if bid_idx is not None and ask_idx is not None and len(row) > max(bid_idx, ask_idx):
+                            result[code].update({
+                                'bid': parse_float(row[bid_idx]),
+                                'ask': parse_float(row[ask_idx]),
+                            })
+
+                        if underlying_code_idx is not None and len(row) > underlying_code_idx:
+                            result[code]['underlying_code'] = str(row[underlying_code_idx]).strip()
+
+                        if underlying_price_idx is not None and len(row) > underlying_price_idx:
+                            result[code]['underlying_price'] = parse_float(row[underlying_price_idx])
+
+                # 處理個股 (ALLBUT0999)
+                for table in tables:
+                    if '每日收盤行情' in table.get('title', ''):
+                        process_table(table)
+                
+                # 額外抓取權證 (0999)
+                if include_warrants:
+                    try:
+                        params['type'] = '0999'
+                        print(f"[DEBUG] Fetching warrant prices for {self.date_str}...")
+                        resp_w = requests.get(url, params=params, timeout=60) # 權證資料很大，給 60s
+                        if resp_w.status_code == 200:
+                            data_w = resp_w.json()
+                            if data_w.get('stat') == 'OK':
+                                w_count = 0
+                                for table in data_w.get('tables', []):
+                                    if '每日收盤行情' in table.get('title', ''):
+                                        start_count = len(result)
+                                        process_table(table)
+                                        w_count += (len(result) - start_count)
+                                print(f"[DEBUG] Added {w_count} warrant prices")
+                    except Exception as e:
+                        print(f"[WARNING] 抓取權證股價失敗: {e}")
                 
                 self._price_cache = result
                 
@@ -548,6 +754,7 @@ class StockMonitor:
         self.watchlist_path = watchlist_path
         self.watchlist = []
         self.stock_data = {}
+        self.warrant_data = {}
     
     def load_watchlist(self) -> List[Dict[str, str]]:
         """載入自選股清單"""
@@ -604,6 +811,66 @@ class StockMonitor:
             if not name:
                 name = price_data.get('name', '') or inst_data.get('name', '')
             
+            # 判斷是否為權證 (長度大於等於 6 碼)
+            is_warrant = len(code) >= 6
+            
+            if is_warrant:
+                # 取得權證基本資料 (履約價、行使比例、到期日)
+                master = fetcher.fetch_warrant_master().get(code, {})
+                
+                # 計算剩餘天數
+                days_to_expiry = None
+                if master.get('expiry_date'):
+                    try:
+                        exp = datetime.strptime(master['expiry_date'], '%Y%m%d')
+                        now = datetime.strptime(self.date_str, '%Y%m%d')
+                        days_to_expiry = (exp - now).days
+                    except:
+                        pass
+                
+                # 計算價內外程度 (Underlying / Strike - 1)
+                moneyness = None
+                strike = master.get('strike_price', 0)
+                underlying_p = price_data.get('underlying_price', 0)
+                if strike > 0 and underlying_p > 0:
+                    moneyness = f"{round((underlying_p / strike - 1) * 100, 2)}%"
+                    if underlying_p > strike:
+                        moneyness += " 價內"
+                    else:
+                        moneyness += " 價外"
+
+                # 計算買賣價差比 (Ask-Bid)/((Ask+Bid)/2)
+                spread_pct = None
+                bid = price_data.get('bid', 0)
+                ask = price_data.get('ask', 0)
+                if ask > 0 and bid > 0:
+                    spread_pct = round(((ask - bid) / ((ask + bid) / 2)) * 100, 2)
+
+                # 計算名目槓桿 (標的價 / 權證價 * 行使比例)
+                leverage = None
+                warrant_p = price_data.get('close', 0)
+                ratio = master.get('exercise_ratio', 0)
+                if warrant_p > 0 and underlying_p > 0 and ratio > 0:
+                    leverage = round((underlying_p / warrant_p) * ratio, 2)
+
+                self.warrant_data[code] = {
+                    'code': code,
+                    'name': name,
+                    'close': price_data.get('close'),
+                    'change': price_data.get('change'),
+                    'pct_change': price_data.get('pct_change'),
+                    'volume': price_data.get('volume'),
+                    'strike_price': strike if strike > 0 else None,
+                    'exercise_ratio': ratio if ratio > 0 else None,
+                    'days_to_expiry': days_to_expiry,
+                    'moneyness': moneyness,
+                    'bid_ask_spread_pct': spread_pct,
+                    'effective_leverage': leverage, # 此處暫以名目槓桿代替
+                    'implied_volatility': None, # 無法計算
+                    'outstanding_pct': None # 無法從 API 取得
+                }
+                continue
+
             # 計算 MA20 乖離率
             dist_ma20 = None
             if price_data.get('close') and hist.get('ma20'):
@@ -643,6 +910,12 @@ class StockMonitor:
                 'volume_5d': hist.get('volume_5d', 0),
             }
         
+        print(f"[DEBUG] self.warrant_data size: {len(self.warrant_data)}")
+        if '055145' in self.warrant_data:
+            print(f"[DEBUG] 055145 Warrant Data: {self.warrant_data['055145']}")
+        else:
+            print("[DEBUG] 055145 NOT found in self.warrant_data")
+            
         print("\n[SUCCESS] 個股籌碼資料抓取完成！\n")
     
     def _fetch_5d_history(self) -> Dict[str, Dict[str, Any]]:
@@ -666,7 +939,7 @@ class StockMonitor:
             fetcher = StockDataFetcher(date)
             
             # 以股價資料是否存在來判斷是否為真實開市日
-            prices = fetcher.fetch_stock_prices()
+            prices = fetcher.fetch_stock_prices(include_warrants=False)
             if not prices:
                 print(f"    - {date} 無資料 (可能是假日)，跳過")
                 time.sleep(1.0)

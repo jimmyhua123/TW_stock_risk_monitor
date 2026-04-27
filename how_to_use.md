@@ -35,7 +35,7 @@ python run_all.py --date 20260416
 python main.py
 
 # 生成指定日期的報告
-python main.py --date 20260421 --output 20260421.xlsx
+python main.py --date 20260424 --output 20260424.xlsx
 
 python main.py --date 20260121 --output 20260121.xlsx
 ```

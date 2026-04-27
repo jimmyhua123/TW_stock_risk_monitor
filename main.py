@@ -30,6 +30,7 @@ class IntegratedRiskReport:
         self.single_day_data = {}
         self.history_data = {}
         self.stock_data = {}  # 個股籌碼資料
+        self.warrant_data = {} # 權證資料
     
     def fetch_all_data(self):
         """抓取所有數據（單日 + 歷史統計）"""
@@ -77,9 +78,11 @@ class IntegratedRiskReport:
             stock_monitor.load_watchlist()
             stock_monitor.fetch_all_data()
             self.stock_data = stock_monitor.stock_data
+            self.warrant_data = stock_monitor.warrant_data
         except Exception as e:
             print(f"[WARNING] 個股籌碼抓取失敗: {e}")
             self.stock_data = {}
+            self.warrant_data = {}
         
         print("\n[SUCCESS] 所有數據抓取完成！\n")
     
@@ -96,6 +99,7 @@ class IntegratedRiskReport:
         ws_summary = wb.create_sheet("總覽", 0)
         ws_detail = wb.create_sheet("詳細數據", 1)
         ws_stock = wb.create_sheet("個股籌碼", 2)
+        ws_warrant = wb.create_sheet("權證監控", 3)
         
         # 生成總覽表
         self._create_summary_sheet(ws_summary)
@@ -105,6 +109,9 @@ class IntegratedRiskReport:
         
         # 生成個股籌碼表
         self._create_stock_sheet(ws_stock)
+        
+        # 生成權證監控表
+        self._create_warrant_sheet(ws_warrant)
         
         # 確保 monitor_xlsx 目錄存在
         output_dir = os.path.join('outputs', 'monitor_xlsx')
@@ -331,6 +338,67 @@ class IntegratedRiskReport:
         
         # 調整欄寬 (含進階指標欄位)
         col_widths = [10, 12, 10, 10, 10, 12, 14, 14, 14, 14, 14, 12, 12, 12, 12, 12, 14, 14, 12, 10, 12, 10]
+        for i, width in enumerate(col_widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+    
+    def _create_warrant_sheet(self, ws):
+        """創建權證監控工作表"""
+        # 標題
+        ws['A1'] = f"權證監控報告 - {self.date_str}"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws.merge_cells('A1:N1')
+        ws['A1'].alignment = Alignment(horizontal='center')
+        
+        if not self.warrant_data:
+            ws['A3'] = "無權證資料（請確認 data/config/watchlist.json 是否有權證代碼）"
+            return
+            
+        # 表頭 (依照使用者需求)
+        headers = [
+            '權證代碼', '權證名稱', '成交價', '漲跌', '漲跌幅%', '成交量',
+            '履約價', '行使比例', '剩餘天數', '價內外', '買賣價差比%',
+            '實質槓桿', '成交價隱波%', '流通在外比例%'
+        ]
+        
+        header_fill = PatternFill(start_color="ED7D31", end_color="ED7D31", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+            
+        # 資料行
+        row = 4
+        for code, data in self.warrant_data.items():
+            ws.cell(row, 1, data.get('code', ''))
+            ws.cell(row, 2, data.get('name', ''))
+            ws.cell(row, 3, data.get('close'))
+            ws.cell(row, 4, data.get('change'))
+            ws.cell(row, 5, data.get('pct_change'))
+            ws.cell(row, 6, data.get('volume'))
+            ws.cell(row, 7, data.get('strike_price') or 'N/A')
+            ws.cell(row, 8, data.get('exercise_ratio') or 'N/A')
+            ws.cell(row, 9, data.get('days_to_expiry') or 'N/A')
+            ws.cell(row, 10, data.get('moneyness') or 'N/A')
+            ws.cell(row, 11, data.get('bid_ask_spread_pct') or 'N/A')
+            ws.cell(row, 12, data.get('effective_leverage') or 'N/A')
+            ws.cell(row, 13, data.get('implied_volatility') or 'N/A')
+            ws.cell(row, 14, data.get('outstanding_pct') or 'N/A')
+            
+            # 漲跌幅顏色
+            if data.get('pct_change') and data['pct_change'] > 0:
+                ws.cell(row, 5).font = Font(color="FF0000")
+                ws.cell(row, 4).font = Font(color="FF0000")
+            elif data.get('pct_change') and data['pct_change'] < 0:
+                ws.cell(row, 5).font = Font(color="008000")
+                ws.cell(row, 4).font = Font(color="008000")
+                
+            row += 1
+            
+        # 調整欄寬
+        col_widths = [10, 16, 10, 10, 10, 12, 10, 10, 10, 10, 12, 10, 12, 14]
         for i, width in enumerate(col_widths, start=1):
             ws.column_dimensions[get_column_letter(i)].width = width
     
