@@ -25,9 +25,28 @@ WEB_DIR = os.path.join(PROJECT_ROOT, 'web')
 DIR_MAP = {
     'json':        os.path.join(PROJECT_ROOT, 'outputs', 'json'),
     'global_json': os.path.join(PROJECT_ROOT, 'outputs', 'global_json'),
+    'coverage_json': os.path.join(PROJECT_ROOT, 'outputs', 'coverage_json'),
+    'derivatives_json': os.path.join(PROJECT_ROOT, 'outputs', 'derivatives_json'),
     'reports':     os.path.join(PROJECT_ROOT, 'outputs', 'reports'),
     'qd':          os.path.join(PROJECT_ROOT, 'QD_twstock', 'result'),
 }
+
+def resolve_output_file(dir_key, filename):
+    """Return an absolute file path only when it stays inside the mapped output dir."""
+    if dir_key not in DIR_MAP or not filename:
+        return None
+
+    target_dir = os.path.abspath(DIR_MAP[dir_key])
+    filepath = os.path.abspath(os.path.normpath(os.path.join(target_dir, filename)))
+
+    try:
+        if os.path.commonpath([target_dir, filepath]) != target_dir:
+            return None
+    except ValueError:
+        return None
+
+    return filepath
+
 
 class DashboardHandler(SimpleHTTPRequestHandler):
     """自訂 HTTP Handler，處理 API 和靜態檔案"""
@@ -84,9 +103,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return
 
         # 安全性檢查：防止路徑穿越
-        target_dir = DIR_MAP[dir_key]
-        filepath = os.path.normpath(os.path.join(target_dir, filename))
-        if not filepath.startswith(target_dir):
+        filepath = resolve_output_file(dir_key, filename)
+        if filepath is None:
             self.send_json({'error': 'Access denied'}, 403)
             return
 
@@ -138,7 +156,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 
 def main():
-    port = 8080
+    port = int(os.environ.get('DASHBOARD_PORT', '8080'))
     server = HTTPServer(('0.0.0.0', port), DashboardHandler)
     print(f"╔══════════════════════════════════════════════╗")
     print(f"║  Dashboard Server 啟動成功                  ║")

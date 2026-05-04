@@ -6,7 +6,10 @@
   1. main.py           → 台灣風險報告 (Excel)
   2. excel_to_json.py   → 轉換為 JSON + TXT
   3. global_market_monitor.py → 全球市場與總經數據
-  4. top_down_strategy.py    → QD策略選股報告
+  4. derivatives_monitor.py  → 期貨與選擇權風險
+  5. coverage_enrichment.py  → 個股產業與題材補充
+  6. top_down_strategy.py    → QD策略選股報告
+  7. daily_briefing.py       → 每日看盤筆記
 """
 
 import os
@@ -72,10 +75,25 @@ def main():
     cmd3 = [PYTHON, os.path.join('src', 'global_market_monitor.py')] + date_args
     run_step(3, '全球市場與總經數據 (global_market_monitor.py)', cmd3)
 
-    # --- 步驟 4: QD Top-Down 策略選股 ---
+    # --- 步驟 4: 期貨與選擇權風險 ---
+    cmd4 = [PYTHON, os.path.join('src', 'derivatives_monitor.py')] + date_args
+    run_step(4, '期貨與選擇權風險 (derivatives_monitor.py)', cmd4)
+
+    # --- 步驟 5: 個股產業與題材補充 ---
+    cmd5 = [PYTHON, os.path.join('src', 'coverage_enrichment.py')] + date_args
+    run_step(5, '個股產業與題材補充 (coverage_enrichment.py)', cmd5)
+
+    # --- 步驟 6: QD Top-Down 策略選股 ---
     qd_dir = os.path.join(PROJECT_ROOT, 'QD_twstock')
-    cmd4 = [PYTHON, 'top_down_strategy.py'] + date_args
-    run_step(4, 'QD Top-Down 策略選股 (top_down_strategy.py)', cmd4, cwd=qd_dir)
+    cmd6 = [PYTHON, 'top_down_strategy.py'] + date_args
+    run_step(6, 'QD Top-Down 策略選股 (top_down_strategy.py)', cmd6, cwd=qd_dir)
+
+    # --- 步驟 7: 每日看盤筆記 ---
+    if args.date:
+        cmd7 = [PYTHON, os.path.join('src', 'daily_briefing.py'), '--date', args.date]
+        run_step(7, '每日看盤筆記 (daily_briefing.py)', cmd7)
+    else:
+        print("\n[INFO] 未指定 --date，略過每日看盤筆記產生。")
 
     # --- 完成 ---
     print(f"\n{'='*60}")
@@ -83,7 +101,11 @@ def main():
     print(f"    台灣報告: outputs/monitor_xlsx/{output_xlsx}")
     print(f"    台灣 JSON: outputs/json/")
     print(f"    全球 JSON: outputs/global_json/")
+    print(f"    衍生品 JSON: outputs/derivatives_json/")
+    print(f"    題材補充 JSON: outputs/coverage_json/")
     print(f"    策略報告: QD_twstock/result/")
+    if args.date:
+        print(f"    每日看盤筆記: docs/notes/看盤筆記/{args.date}.md")
     print(f"    啟動儀表板: python web/server.py")
     print(f"{'='*60}")
 

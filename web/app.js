@@ -30,7 +30,14 @@ async function loadPage(tab) {
     if (loadedPages[tab]) return; // 已載入過列表就不再重複
     loadedPages[tab] = true;
 
-    const dirMap = { tw: 'json', global: 'global_json', reports: 'reports', qd: 'qd' };
+    const dirMap = {
+        tw: 'json',
+        global: 'global_json',
+        coverage: 'coverage_json',
+        derivatives: 'derivatives_json',
+        reports: 'reports',
+        qd: 'qd'
+    };
     const dir = dirMap[tab];
     const statusEl = document.getElementById(`${tab}-status`);
     const selectEl = document.getElementById(`${tab}-date-select`);
@@ -67,37 +74,16 @@ async function loadPage(tab) {
     }
 }
 
-async function loadFile(tab, dir, filename, statusEl) {
-    statusEl.textContent = `載入 ${filename}...`;
-    try {
-        const res = await fetch(`/api/file?dir=${dir}&name=${encodeURIComponent(filename)}`);
-
-        if (tab === 'tw') {
-            const data = await res.json();
-            renderTWDashboard(data);
-        } else if (tab === 'global') {
-            const data = await res.json();
-            renderGlobalDashboard(data);
-        } else if (tab === 'reports') {
-            // iframe 直接設定 src
-            document.getElementById('reportIframe').src = `/api/file?dir=${dir}&name=${encodeURIComponent(filename)}`;
-        } else if (tab === 'qd') {
-            const text = await res.text();
-            renderMarkdown(text);
-        }
-
-        statusEl.textContent = `✅ ${filename}`;
-    } catch (err) {
-        statusEl.textContent = `❌ 載入失敗 (${err.message})`;
-    }
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /* ===== 台灣風險 Dashboard ===== */
-function renderTWDashboard(data) {
-    if (data['總覽']) renderOverview(data['總覽']);
-    if (data['個股籌碼']) renderStocks(data['個股籌碼']);
-}
-
 function renderOverview(overviewData) {
     const container = document.getElementById('overviewCards');
     container.innerHTML = '';
@@ -138,42 +124,6 @@ function renderOverview(overviewData) {
             </div>
         `;
         container.appendChild(card);
-    });
-}
-
-function renderStocks(stocksData) {
-    const tbody = document.getElementById('stocksTableBody');
-    tbody.innerHTML = '';
-    const validData = stocksData.filter(item => item['股票代號']);
-
-    validData.forEach((item, index) => {
-        const tr = document.createElement('tr');
-        tr.className = 'fade-in';
-        tr.style.animationDelay = `${index * 0.03}s`;
-
-        const pctChange = item['漲跌幅(%)'];
-        const pctClass = pctChange > 0 ? 'text-danger' : (pctChange < 0 ? 'text-success' : '');
-        const pctStr = pctChange !== null && pctChange !== undefined ? `${pctChange > 0 ? '+' : ''}${parseFloat(pctChange).toFixed(2)}%` : '-';
-
-        const foreignDaily = item['外資當日(張)'];
-        const foreignClass = foreignDaily > 0 ? 'text-danger' : (foreignDaily < 0 ? 'text-success' : '');
-        const foreignStr = foreignDaily !== null ? `${foreignDaily > 0 ? '+' : ''}${foreignDaily}` : '-';
-
-        const trustDaily = item['投信當日(張)'];
-        const trustClass = trustDaily > 0 ? 'text-danger' : (trustDaily < 0 ? 'text-success' : '');
-        const trustStr = trustDaily !== null ? `${trustDaily > 0 ? '+' : ''}${trustDaily}` : '-';
-
-        tr.innerHTML = `
-            <td><span class="stock-code">${item['股票代號']}</span></td>
-            <td><span class="stock-name">${item['股票名稱'] || '-'}</span></td>
-            <td style="font-weight:600;">${item['收盤價'] !== null ? item['收盤價'] : '-'}</td>
-            <td class="${pctClass}">${pctStr}</td>
-            <td class="${foreignClass}">${foreignStr}</td>
-            <td class="${trustClass}">${trustStr}</td>
-            <td>${item['融資增減(張)'] !== null ? item['融資增減(張)'] : '-'}</td>
-            <td>${item['MA20乖離(%)'] !== null && item['MA20乖離(%)'] !== undefined && !isNaN(item['MA20乖離(%)']) ? `${item['MA20乖離(%)'] > 0 ? '+' : ''}${parseFloat(item['MA20乖離(%)']).toFixed(2)}%` : '-'}</td>
-        `;
-        tbody.appendChild(tr);
     });
 }
 
@@ -286,6 +236,92 @@ function renderGlobalMarkets(marketData) {
     });
 }
 
+/* ===== 題材補充 Dashboard ===== */
+function renderCoverageDashboard(data) {
+    const summaryEl = document.getElementById('coverageSummary');
+    const container = document.getElementById('coverageContainer');
+    const items = Array.isArray(data.items) ? data.items : [];
+    const foundItems = items.filter(item => item.found);
+    const missingItems = items.filter(item => !item.found);
+
+    summaryEl.innerHTML = `
+        <div class="coverage-summary-card glass-panel">
+            <div>
+                <div class="summary-label">資料來源</div>
+                <div class="summary-value">${escapeHtml(data.source || 'Timeverse/My-TW-Coverage')}</div>
+            </div>
+            <div>
+                <div class="summary-label">日期</div>
+                <div class="summary-value">${escapeHtml(data.date || '-')}</div>
+            </div>
+            <div>
+                <div class="summary-label">匹配</div>
+                <div class="summary-value">${foundItems.length}/${items.length}</div>
+            </div>
+            <div>
+                <div class="summary-label">授權</div>
+                <div class="summary-value">${escapeHtml(data.source_license || 'MIT')}</div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = '';
+    if (!items.length) {
+        container.innerHTML = '<div class="empty-state glass-panel">沒有可顯示的題材資料</div>';
+        return;
+    }
+
+    foundItems.forEach((item, index) => {
+        const card = document.createElement('article');
+        card.className = 'coverage-card fade-in';
+        card.style.animationDelay = `${index * 0.03}s`;
+        card.innerHTML = renderCoverageItem(item);
+        container.appendChild(card);
+    });
+
+    if (missingItems.length) {
+        const missing = document.createElement('div');
+        missing.className = 'coverage-missing glass-panel';
+        missing.innerHTML = `
+            <div class="summary-label">未匹配</div>
+            <div class="coverage-tags">
+                ${missingItems.map(item => `<span class="coverage-tag muted">${escapeHtml(item.code)} ${escapeHtml(item.name || '')}</span>`).join('')}
+            </div>
+        `;
+        container.appendChild(missing);
+    }
+}
+
+function renderCoverageItem(item) {
+    const themes = Array.isArray(item.themes) ? item.themes.slice(0, 12) : [];
+    const partners = Array.isArray(item.customers_suppliers) ? item.customers_suppliers.slice(0, 10) : [];
+
+    return `
+        <div class="coverage-card-header">
+            <div>
+                <div class="coverage-code">${escapeHtml(item.code)}</div>
+                <h3>${escapeHtml(item.company || item.name || '-')}</h3>
+            </div>
+            <div class="coverage-industry">${escapeHtml(item.industry || '-')}</div>
+        </div>
+        <div class="coverage-meta">${escapeHtml(item.sector || '-')}</div>
+        <p class="coverage-summary-text">${escapeHtml(item.business_summary || '-')}</p>
+        <div class="coverage-block">
+            <div class="coverage-label">題材</div>
+            <div class="coverage-tags">${renderTags(themes)}</div>
+        </div>
+        <div class="coverage-block">
+            <div class="coverage-label">客戶 / 供應商</div>
+            <div class="coverage-tags">${renderTags(partners)}</div>
+        </div>
+    `;
+}
+
+function renderTags(tags) {
+    if (!tags.length) return '<span class="coverage-tag muted">-</span>';
+    return tags.map(tag => `<span class="coverage-tag">${escapeHtml(tag)}</span>`).join('');
+}
+
 /* ===== Markdown → HTML 簡易渲染 ===== */
 function renderMarkdown(md) {
     const container = document.getElementById('qdContent');
@@ -308,4 +344,242 @@ function renderMarkdown(md) {
     });
 
     container.innerHTML = `<div class="md-rendered"><p>${html}</p></div>`;
+}
+
+/* ===== TW dashboard coverage integration ===== */
+let coverageIndexPromise = null;
+
+async function loadCoverageIndex() {
+    if (coverageIndexPromise) return coverageIndexPromise;
+
+    coverageIndexPromise = (async () => {
+        try {
+            const listRes = await fetch('/api/list?dir=coverage_json');
+            const listData = await listRes.json();
+            const latest = Array.isArray(listData.files) && listData.files.length ? listData.files[0].name : null;
+            if (!latest) return new Map();
+
+            const fileRes = await fetch(`/api/file?dir=coverage_json&name=${encodeURIComponent(latest)}`);
+            const data = await fileRes.json();
+            const items = Array.isArray(data.items) ? data.items : [];
+            return new Map(
+                items
+                    .filter(item => item && item.found && item.code)
+                    .map(item => [String(item.code).padStart(4, '0'), item])
+            );
+        } catch (err) {
+            console.warn('Coverage index unavailable:', err);
+            return new Map();
+        }
+    })();
+
+    return coverageIndexPromise;
+}
+
+function ensureStockThemeHeader() {
+    const headerRow = document.querySelector('#page-tw .data-table thead tr');
+    if (!headerRow || headerRow.querySelector('[data-column="themes"]')) return;
+
+    const th = document.createElement('th');
+    th.dataset.column = 'themes';
+    th.textContent = '題材';
+    headerRow.appendChild(th);
+}
+
+async function renderTWDashboard(data) {
+    if (data['總覽']) renderOverview(data['總覽']);
+
+    const stocks = data['個股籌碼'] || data['個股監控'];
+    if (stocks) {
+        const coverageByCode = await loadCoverageIndex();
+        renderStocks(stocks, coverageByCode);
+    }
+}
+
+function renderStocks(stocksData, coverageByCode = new Map()) {
+    ensureStockThemeHeader();
+
+    const tbody = document.getElementById('stocksTableBody');
+    tbody.innerHTML = '';
+    const validData = stocksData.filter(item => item['股票代號']);
+
+    validData.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'fade-in';
+        tr.style.animationDelay = `${index * 0.03}s`;
+
+        const code = String(item['股票代號']).padStart(4, '0');
+        const pctChange = item['漲跌幅(%)'];
+        const pctClass = pctChange > 0 ? 'text-danger' : (pctChange < 0 ? 'text-success' : '');
+        const pctStr = pctChange !== null && pctChange !== undefined ? `${pctChange > 0 ? '+' : ''}${parseFloat(pctChange).toFixed(2)}%` : '-';
+
+        const foreignDaily = item['外資當日(張)'];
+        const foreignClass = foreignDaily > 0 ? 'text-danger' : (foreignDaily < 0 ? 'text-success' : '');
+        const foreignStr = foreignDaily !== null && foreignDaily !== undefined ? `${foreignDaily > 0 ? '+' : ''}${foreignDaily}` : '-';
+
+        const trustDaily = item['投信當日(張)'];
+        const trustClass = trustDaily > 0 ? 'text-danger' : (trustDaily < 0 ? 'text-success' : '');
+        const trustStr = trustDaily !== null && trustDaily !== undefined ? `${trustDaily > 0 ? '+' : ''}${trustDaily}` : '-';
+
+        const marginDaily = item['融資增減(張)'];
+        const marginStr = marginDaily !== null && marginDaily !== undefined ? marginDaily : '-';
+
+        const ma20 = item['MA20乖離(%)'];
+        const ma20Str = ma20 !== null && ma20 !== undefined && !isNaN(ma20)
+            ? `${ma20 > 0 ? '+' : ''}${parseFloat(ma20).toFixed(2)}%`
+            : '-';
+
+        tr.innerHTML = `
+            <td><span class="stock-code">${escapeHtml(code)}</span></td>
+            <td><span class="stock-name">${escapeHtml(item['股票名稱'] || '-')}</span></td>
+            <td style="font-weight:600;">${item['收盤價'] !== null && item['收盤價'] !== undefined ? escapeHtml(item['收盤價']) : '-'}</td>
+            <td class="${pctClass}">${pctStr}</td>
+            <td class="${foreignClass}">${foreignStr}</td>
+            <td class="${trustClass}">${trustStr}</td>
+            <td>${escapeHtml(marginStr)}</td>
+            <td>${ma20Str}</td>
+            <td>${renderStockThemeTags(coverageByCode.get(code))}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function renderStockThemeTags(coverage) {
+    const themes = coverage && Array.isArray(coverage.themes) ? coverage.themes.slice(0, 4) : [];
+    if (!themes.length) return '<span class="stock-theme-empty">-</span>';
+
+    return `
+        <div class="stock-theme-tags">
+            ${themes.map(theme => `<span class="stock-theme-tag">${escapeHtml(theme)}</span>`).join('')}
+        </div>
+    `;
+}
+
+function renderDerivativesDashboard(data) {
+    const summaryEl = document.getElementById('derivativesSummary');
+    const signalsEl = document.getElementById('derivativesSignals');
+    const futures = data.futures || {};
+    const positioning = data.positioning || {};
+    const options = data.options || {};
+    const summary = data.summary || {};
+
+    const riskScore = Number(summary.risk_score ?? 0);
+    const riskClass = riskScore >= 70 ? 'derivatives-risk-high' : (riskScore >= 45 ? 'derivatives-risk-medium' : 'derivatives-risk-low');
+
+    summaryEl.innerHTML = `
+        <div class="derivatives-hero glass-panel ${riskClass}">
+            <div>
+                <div class="summary-label">風險分數</div>
+                <div class="derivatives-score">${Number.isFinite(riskScore) ? riskScore : '-'}</div>
+            </div>
+            <div>
+                <div class="summary-label">市場傾向</div>
+                <div class="derivatives-bias">${formatSignal(summary.bias)}</div>
+            </div>
+            <div>
+                <div class="summary-label">資料日期</div>
+                <div class="summary-value">${escapeHtml(data.date || '-')}</div>
+            </div>
+            <div>
+                <div class="summary-label">更新時間</div>
+                <div class="summary-value">${escapeHtml(data.update_time || '-')}</div>
+            </div>
+        </div>
+        <div class="derivatives-card-grid">
+            ${renderDerivativeMetricCard('台指期基差', formatSignedNumber(futures.basis, 2), `${formatSignedNumber(futures.basis_pct, 2)}%`, futures.basis_signal)}
+            ${renderDerivativeMetricCard('外資期貨淨部位', formatSignedNumber(positioning.foreign_tx_net_open_interest, 0), '口', positioning.foreign_tx_net_signal)}
+            ${renderDerivativeMetricCard('Put / Call Ratio', formatNumber(options.pc_ratio, 2), `5D ${formatNumber(options.pc_ratio_5d_avg, 2)}`, options.pc_ratio_signal)}
+        </div>
+    `;
+
+    const signals = Array.isArray(summary.signals) ? summary.signals : [];
+    signalsEl.innerHTML = `
+        <div class="derivatives-signal-panel glass-panel">
+            <div class="derivatives-panel-title">訊號拆解</div>
+            ${signals.length ? signals.map(renderDerivativeSignal).join('') : '<div class="empty-state">沒有可顯示的期權訊號</div>'}
+        </div>
+    `;
+}
+
+function renderDerivativeMetricCard(title, value, subValue, signal) {
+    return `
+        <article class="derivatives-metric-card">
+            <div class="derivatives-metric-title">${escapeHtml(title)}</div>
+            <div class="derivatives-metric-value">${escapeHtml(value)}</div>
+            <div class="derivatives-metric-footer">
+                <span>${escapeHtml(subValue)}</span>
+                <span class="derivatives-signal-chip ${signalClass(signal)}">${formatSignal(signal)}</span>
+            </div>
+        </article>
+    `;
+}
+
+function renderDerivativeSignal(item) {
+    return `
+        <div class="derivatives-signal-row">
+            <span>${escapeHtml(item.name || '-')}</span>
+            <span class="derivatives-signal-chip ${signalClass(item.signal)}">${formatSignal(item.signal)}</span>
+        </div>
+    `;
+}
+
+function formatSignal(signal) {
+    const map = {
+        risk_off: '風險偏空',
+        risk_on: '風險偏多',
+        neutral: '中性',
+        bearish: '偏空',
+        bullish: '偏多',
+        hedging_pressure: '避險壓力',
+    };
+    return map[signal] || signal || '-';
+}
+
+function signalClass(signal) {
+    if (['risk_off', 'bearish', 'hedging_pressure'].includes(signal)) return 'signal-bearish';
+    if (['risk_on', 'bullish'].includes(signal)) return 'signal-bullish';
+    return 'signal-neutral';
+}
+
+function formatNumber(value, digits = 2) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '-';
+    return num.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function formatSignedNumber(value, digits = 2) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '-';
+    const formatted = num.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    return num > 0 ? `+${formatted}` : formatted;
+}
+
+async function loadFile(tab, dir, filename, statusEl) {
+    statusEl.textContent = `載入 ${filename}...`;
+    try {
+        const res = await fetch(`/api/file?dir=${dir}&name=${encodeURIComponent(filename)}`);
+
+        if (tab === 'tw') {
+            const data = await res.json();
+            await renderTWDashboard(data);
+        } else if (tab === 'global') {
+            const data = await res.json();
+            renderGlobalDashboard(data);
+        } else if (tab === 'coverage') {
+            const data = await res.json();
+            renderCoverageDashboard(data);
+        } else if (tab === 'derivatives') {
+            const data = await res.json();
+            renderDerivativesDashboard(data);
+        } else if (tab === 'reports') {
+            document.getElementById('reportIframe').src = `/api/file?dir=${dir}&name=${encodeURIComponent(filename)}`;
+        } else if (tab === 'qd') {
+            const text = await res.text();
+            renderMarkdown(text);
+        }
+
+        statusEl.textContent = `✅ ${filename}`;
+    } catch (err) {
+        statusEl.textContent = `❌ 載入失敗 (${err.message})`;
+    }
 }

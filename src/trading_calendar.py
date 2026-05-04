@@ -96,10 +96,13 @@ class TradingCalendar:
         Args:
             target_date_str: 目標日期字串 YYYYMMDD
             num_days: 需要的交易日數量
+            buffer_days: 額外回傳的候選交易日數量
             
         Returns:
-            實際交易日期清單 [YYYYMMDD, ...]，長度剛好為 num_days
+            實際交易日期清單 [YYYYMMDD, ...]，長度最多為 num_days + buffer_days
         """
+        requested_days = num_days + max(buffer_days, 0)
+
         if not self.trading_days:
             self.update_calendar()
             
@@ -109,7 +112,7 @@ class TradingCalendar:
              target_date = datetime.strptime(target_date_str, '%Y%m%d')
              days = []
              current = target_date
-             while len(days) < num_days:
+             while len(days) < requested_days:
                  if current.weekday() < 5:
                      days.append(current.strftime('%Y%m%d'))
                  current -= timedelta(days=1)
@@ -144,14 +147,14 @@ class TradingCalendar:
              if not valid_days:
                   return []
 
-        # 取最後 num_days 筆
-        result = valid_days[-num_days:]
+        # 取最後 num_days 筆；buffer_days 會額外回傳候選交易日，供呼叫端略過缺資料日期。
+        result = valid_days[-requested_days:]
         
-        if len(result) < num_days:
-            print(f"[WARNING] 快取的交易日數量不足 ({len(result)} < {num_days})，將抓取更早之前的歷史。")
+        if len(result) < requested_days:
+            print(f"[WARNING] 快取的交易日數量不足 ({len(result)} < {requested_days})，將抓取更早之前的歷史。")
             self.update_calendar(years_back=20, force=True) # 嘗試抓取更多
             valid_days = [d for d in self.trading_days if d <= target_date_str]
-            result = valid_days[-num_days:]
+            result = valid_days[-requested_days:]
             
         return result
 

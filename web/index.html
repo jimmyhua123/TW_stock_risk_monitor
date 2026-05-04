@@ -22,6 +22,12 @@
             <button class="tab-btn" data-tab="global" id="tab-global">
                 <span class="tab-icon">🌍</span> 全球市場與總經
             </button>
+            <button class="tab-btn" data-tab="coverage" id="tab-coverage">
+                <span class="tab-icon">🏷️</span> 題材補充
+            </button>
+            <button class="tab-btn" data-tab="derivatives" id="tab-derivatives">
+                <span class="tab-icon">⚖</span> 期權風險
+            </button>
             <button class="tab-btn" data-tab="reports" id="tab-reports">
                 <span class="tab-icon">💹</span> 美股板塊資金
             </button>
@@ -77,7 +83,35 @@
                 </section>
             </div>
 
-            <!-- ===== Page 3: 美股板塊資金 (iframe) ===== -->
+            <!-- ===== Page 3: 題材補充 ===== -->
+            <div class="tab-page" id="page-coverage">
+                <div class="page-toolbar glass-panel">
+                    <label>資料日期：</label>
+                    <select id="coverage-date-select" class="date-select"></select>
+                    <span id="coverage-status" class="status-text">載入中...</span>
+                </div>
+                <section class="coverage-section mb-5">
+                    <h2 class="section-title">個股產業與題材補充</h2>
+                    <div id="coverageSummary" class="coverage-summary"></div>
+                    <div id="coverageContainer" class="coverage-grid"></div>
+                </section>
+            </div>
+
+            <!-- ===== Page 4: 期權風險 ===== -->
+            <div class="tab-page" id="page-derivatives">
+                <div class="page-toolbar glass-panel">
+                    <label>資料日期：</label>
+                    <select id="derivatives-date-select" class="date-select"></select>
+                    <span id="derivatives-status" class="status-text">載入中...</span>
+                </div>
+                <section class="derivatives-section mb-5">
+                    <h2 class="section-title">期貨 / 選擇權風險</h2>
+                    <div id="derivativesSummary" class="derivatives-summary"></div>
+                    <div id="derivativesSignals" class="derivatives-signals"></div>
+                </section>
+            </div>
+
+            <!-- ===== Page 5: 美股板塊資金 (iframe) ===== -->
             <div class="tab-page" id="page-reports">
                 <div class="page-toolbar glass-panel">
                     <label>選擇報告：</label>
@@ -89,7 +123,7 @@
                 </div>
             </div>
 
-            <!-- ===== Page 4: QD策略選股 ===== -->
+            <!-- ===== Page 6: QD策略選股 ===== -->
             <div class="tab-page" id="page-qd">
                 <div class="page-toolbar glass-panel">
                     <label>選擇報告：</label>

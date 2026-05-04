@@ -236,6 +236,27 @@ body {
 .data-table td { font-weight: 500; }
 .stock-code { font-weight: 700; color: #e2e8f0; font-size: 1rem; }
 .stock-name { color: var(--text-secondary); }
+.stock-theme-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    min-width: 180px;
+    max-width: 280px;
+}
+.stock-theme-tag {
+    color: #dbeafe;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(96, 165, 250, 0.22);
+    border-radius: 999px;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+.stock-theme-empty {
+    color: var(--text-secondary);
+}
 
 /* === Utilities === */
 .text-success { color: var(--success) !important; }
@@ -278,6 +299,214 @@ body {
 .mini-name   { font-size: 1rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.3rem; }
 .mini-price  { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin: 0.5rem 0 0.2rem 0; }
 .mini-change { font-size: 1rem; font-weight: 700; }
+
+/* ===========================
+   Coverage Enrichment Page
+   =========================== */
+.coverage-summary {
+    margin-bottom: 1.25rem;
+}
+.coverage-summary-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    padding: 1rem 1.25rem !important;
+}
+.summary-label {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+.summary-value {
+    color: #f8fafc;
+    font-weight: 700;
+    line-height: 1.35;
+}
+.coverage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+.coverage-card,
+.coverage-missing,
+.empty-state {
+    background: rgba(30, 41, 59, 0.55);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 1.15rem;
+}
+.coverage-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+.coverage-code {
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+}
+.coverage-card h3 {
+    margin: 0.1rem 0 0 0;
+    font-size: 1.15rem;
+    color: #f8fafc;
+}
+.coverage-industry {
+    color: #bfdbfe;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(96, 165, 250, 0.22);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    max-width: 45%;
+    text-align: right;
+}
+.coverage-meta {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+.coverage-summary-text {
+    color: #cbd5e1;
+    font-size: 0.92rem;
+    line-height: 1.65;
+    margin: 0 0 1rem 0;
+}
+.coverage-block {
+    margin-top: 0.85rem;
+}
+.coverage-label {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.coverage-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+.coverage-tag {
+    color: #dbeafe;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 999px;
+    padding: 0.28rem 0.58rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.coverage-tag.muted,
+.empty-state {
+    color: var(--text-secondary);
+}
+
+/* ===========================
+   Derivatives Risk Page
+   =========================== */
+.derivatives-summary {
+    display: grid;
+    gap: 1rem;
+}
+.derivatives-hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 1.25rem !important;
+    border-left: 4px solid rgba(148, 163, 184, 0.6);
+}
+.derivatives-risk-high {
+    border-left-color: var(--danger);
+}
+.derivatives-risk-medium {
+    border-left-color: var(--warning);
+}
+.derivatives-risk-low {
+    border-left-color: var(--success);
+}
+.derivatives-score {
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.derivatives-bias {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+.derivatives-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+.derivatives-metric-card {
+    background: rgba(30, 41, 59, 0.55);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 1.15rem;
+}
+.derivatives-metric-title,
+.derivatives-panel-title {
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 700;
+    margin-bottom: 0.65rem;
+}
+.derivatives-metric-value {
+    color: #f8fafc;
+    font-size: 1.65rem;
+    font-weight: 800;
+    margin-bottom: 0.8rem;
+}
+.derivatives-metric-footer,
+.derivatives-signal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.derivatives-metric-footer {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+}
+.derivatives-signals {
+    margin-top: 1rem;
+}
+.derivatives-signal-panel {
+    padding: 1rem 1.25rem !important;
+}
+.derivatives-signal-row {
+    padding: 0.8rem 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.derivatives-signal-chip {
+    border-radius: 999px;
+    padding: 0.24rem 0.58rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.signal-bearish {
+    color: #fecaca;
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.signal-bullish {
+    color: #bbf7d0;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.signal-neutral {
+    color: #dbeafe;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(96, 165, 250, 0.22);
+}
 
 /* ===========================
    iframe (Reports Page)
