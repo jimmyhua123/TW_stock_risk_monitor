@@ -25,7 +25,7 @@ cd TW_stock_risk_monitor
 python run_all.py
 
 # 指定日期
-python run_all.py --date 20260505
+python run_all.py --date 20260507
 ```
 
 ### 1. 整合風險報告（推薦）
@@ -101,7 +101,8 @@ python src/backfill_stock.py --codes 3167 --days 30 --date 20260410 --merge
 ### 5. 盤中即時監控 (intraday_monitor.py)
 擷取大盤、期貨及自選股(`data/config/watchlist.json`)的最新盤中走勢與漲跌百分比，並將結果自動附加到 `docs/notes/看盤筆記/MMDD.md` 內。
 ```bash
-python src/intraday_monitor.py
+python src/intraday_monitor.py    
+ 
 ```
 
 ---
