@@ -3,13 +3,13 @@
 """
 一鍵執行所有報告生成工具 (Run All)
 統一指定日期，依序執行：
-  1. main.py           → 台灣風險報告 (Excel)
-  2. excel_to_json.py   → 轉換為 JSON + TXT
-  3. global_market_monitor.py → 全球市場與總經數據
-  4. derivatives_monitor.py  → 期貨與選擇權風險
-  5. coverage_enrichment.py  → 個股產業與題材補充
-  6. top_down_strategy.py    → QD策略選股報告
-  7. daily_briefing.py       → 每日看盤筆記
+  1. main.py                    → 台灣風險報告 (Excel)
+  2. excel_to_json.py           → 轉換為 JSON + TXT
+  3. global_market_monitor.py   → 全球市場與總經數據
+  4. derivatives_monitor.py     → 期貨與選擇權風險
+  5. coverage_enrichment.py     → 個股產業與題材補充
+  6. stock_futures_rollover.py  → 股期換月轉倉逆價差監控
+  7. daily_briefing.py          → 每日看盤筆記
 """
 
 import os
@@ -83,10 +83,9 @@ def main():
     cmd5 = [PYTHON, os.path.join('src', 'coverage_enrichment.py')] + date_args
     run_step(5, '個股產業與題材補充 (coverage_enrichment.py)', cmd5)
 
-    # --- 步驟 6: QD Top-Down 策略選股 ---
-    qd_dir = os.path.join(PROJECT_ROOT, 'QD_twstock')
-    cmd6 = [PYTHON, 'top_down_strategy.py'] + date_args
-    run_step(6, 'QD Top-Down 策略選股 (top_down_strategy.py)', cmd6, cwd=qd_dir)
+    # --- 步驟 6: 股期換月轉倉逆價差監控 ---
+    cmd6 = [PYTHON, os.path.join('src', 'stock_futures_rollover.py')] + date_args
+    run_step(6, '股期換月轉倉逆價差監控 (stock_futures_rollover.py)', cmd6)
 
     # --- 步驟 7: 每日看盤筆記 ---
     if args.date:
@@ -103,7 +102,7 @@ def main():
     print(f"    全球 JSON: outputs/global_json/")
     print(f"    衍生品 JSON: outputs/derivatives_json/")
     print(f"    題材補充 JSON: outputs/coverage_json/")
-    print(f"    策略報告: QD_twstock/result/")
+    print(f"    股期換月價差: outputs/rollover_json/ / outputs/rollover_txt/")
     if args.date:
         print(f"    每日看盤筆記: docs/notes/看盤筆記/{args.date}.md")
     print(f"    啟動儀表板: python web/server.py")
