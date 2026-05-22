@@ -1,0 +1,263 @@
+{
+    "update_time": "2026-05-22 08:49:46",
+    "data_date": "20260521",
+    "market_data": {
+        "Americas": [
+            {
+                "name": "標普500",
+                "ticker": "^GSPC",
+                "price": 7445.72,
+                "change": 0.17,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "道瓊工業",
+                "ticker": "^DJI",
+                "price": 50285.66,
+                "change": 0.55,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "納斯達克",
+                "ticker": "^IXIC",
+                "price": 26293.1,
+                "change": 0.09,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "費城半導體",
+                "ticker": "^SOX",
+                "price": 11964.08,
+                "change": 1.28,
+                "unit": "%",
+                "date": "05/21"
+            }
+        ],
+        "Europe": [
+            {
+                "name": "德國DAX",
+                "ticker": "^GDAXI",
+                "price": 24737.24,
+                "change": 1.38,
+                "unit": "%",
+                "date": "05/20"
+            },
+            {
+                "name": "法國CAC40",
+                "ticker": "^FCHI",
+                "price": 8117.42,
+                "change": 1.7,
+                "unit": "%",
+                "date": "05/20"
+            },
+            {
+                "name": "英國FTSE",
+                "ticker": "^FTSE",
+                "price": 10432.3,
+                "change": 0.98,
+                "unit": "%",
+                "date": "05/20"
+            }
+        ],
+        "AsiaPacific": [
+            {
+                "name": "日經225",
+                "ticker": "^N225",
+                "price": 62797.2,
+                "change": 5.0,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "南韓KOSPI",
+                "ticker": "^KS11",
+                "price": 7855.87,
+                "change": 8.97,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "台灣加權",
+                "ticker": "^TWII",
+                "price": 40020.82,
+                "change": -0.39,
+                "unit": "%",
+                "date": "05/20"
+            },
+            {
+                "name": "香港恆生",
+                "ticker": "^HSI",
+                "price": 25651.12,
+                "change": -0.57,
+                "unit": "%",
+                "date": "05/20"
+            },
+            {
+                "name": "滬深300",
+                "ticker": "000300.SS",
+                "price": NaN,
+                "change": NaN,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "澳洲ASX200",
+                "ticker": "^AXJO",
+                "price": 8663.0,
+                "change": 1.96,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "印度SENSEX",
+                "ticker": "^BSESN",
+                "price": 75318.39,
+                "change": 0.16,
+                "unit": "%",
+                "date": "05/20"
+            }
+        ],
+        "Commodities": [
+            {
+                "name": "黃金",
+                "ticker": "GC=F",
+                "price": 4540.8,
+                "change": 0.21,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "WTI原油",
+                "ticker": "CL=F",
+                "price": 98.09,
+                "change": -0.17,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "銅",
+                "ticker": "HG=F",
+                "price": 6.36,
+                "change": 1.08,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "白銀",
+                "ticker": "SI=F",
+                "price": 76.92,
+                "change": 1.41,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "黃豆",
+                "ticker": "ZS=F",
+                "price": 1193.0,
+                "change": -0.56,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "玉米",
+                "ticker": "ZC=F",
+                "price": 461.0,
+                "change": -1.02,
+                "unit": "%",
+                "date": "05/21"
+            },
+            {
+                "name": "小麥",
+                "ticker": "ZW=F",
+                "price": 644.75,
+                "change": -2.38,
+                "unit": "%",
+                "date": "05/21"
+            }
+        ],
+        "Rates_Forex": [
+            {
+                "name": "10年美債(%)",
+                "ticker": "^TNX",
+                "price": 4.59,
+                "change": 1.4,
+                "unit": "bp",
+                "date": "05/21"
+            },
+            {
+                "name": "比特幣",
+                "ticker": "BTC-USD",
+                "price": 77387.08,
+                "change": -0.09,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "美元/台幣",
+                "ticker": "USDTWD=X",
+                "price": 31.56,
+                "change": -0.1,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "澳幣/美元",
+                "ticker": "AUDUSD=X",
+                "price": 0.71,
+                "change": -0.04,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "歐元/美元",
+                "ticker": "EURUSD=X",
+                "price": 1.16,
+                "change": -0.06,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "美元/日圓",
+                "ticker": "USDJPY=X",
+                "price": 159.04,
+                "change": 0.1,
+                "unit": "%",
+                "date": "05/22"
+            },
+            {
+                "name": "美元指數",
+                "ticker": "DX-Y.NYB",
+                "price": 99.25,
+                "change": 0.14,
+                "unit": "%",
+                "date": "05/21"
+            }
+        ]
+    },
+    "macro_data": {
+        "UNRATE": {
+            "name": "失業率",
+            "price": 4.3,
+            "change": 0.0,
+            "date": "04/01",
+            "unit": "%"
+        },
+        "CPIAUCSL": {
+            "name": "通膨率 (CPI YoY)",
+            "price": 3.95,
+            "change": 0.63,
+            "date": "04/01",
+            "unit": "%"
+        },
+        "FEDFUNDS": {
+            "name": "基準利率",
+            "price": 3.64,
+            "change": 0.0,
+            "date": "04/01",
+            "unit": "%"
+        }
+    }
+}
