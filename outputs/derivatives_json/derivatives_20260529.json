@@ -1,0 +1,40 @@
+{
+  "date": "20260529",
+  "update_time": "2026-06-01 08:53:28",
+  "futures": {
+    "tx_near_settlement": 45285,
+    "tx_near_change_pct": 3.3,
+    "taiex_spot": 44732.94,
+    "basis": 552.06,
+    "basis_pct": 1.23,
+    "basis_signal": "bullish"
+  },
+  "positioning": {
+    "foreign_tx_net_open_interest": -60650,
+    "foreign_tx_net_signal": "bearish",
+    "source_note": "TAIFEX futContractsDate"
+  },
+  "options": {
+    "pc_ratio": 222.36,
+    "pc_ratio_5d_avg": 161.84,
+    "pc_ratio_signal": "hedging_pressure"
+  },
+  "summary": {
+    "risk_score": 65,
+    "bias": "neutral",
+    "signals": [
+      {
+        "name": "台指期基差",
+        "signal": "bullish"
+      },
+      {
+        "name": "外資期貨部位",
+        "signal": "bearish"
+      },
+      {
+        "name": "選擇權 Put/Call Ratio",
+        "signal": "hedging_pressure"
+      }
+    ]
+  }
+}
