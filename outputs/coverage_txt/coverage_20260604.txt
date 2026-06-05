@@ -1,0 +1,157 @@
+# Watchlist 產業與題材補充 (20260604)
+
+來源: Timeverse/My-TW-Coverage
+授權: My-TW-Coverage MIT License
+
+## 0050 0050
+- 狀態: coverage report not found
+
+## 1519 華城
+- 板塊/產業: Industrials / Electrical Equipment & Parts
+- 題材: AI 伺服器, 資料中心, 星際之門, OpenAI, SoftBank, Oracle, 台電, 台積電, 台塑, 沃旭能源, 日本製鐵, POSCO
+- 客戶/供應商: 台電, 台積電, 台塑, AEP, PG&E, Duke Energy, Southern Company, 星際之門, OpenAI, SoftBank, Oracle, 沃旭能源
+- 業務摘要: 華城電機 (1519，Fortune Electric) 為台灣重電產業龍頭，全球變壓器供應鏈重要一員，具備生產 500kV 級超高壓變壓器能力。受惠全球電網更新、AI 伺服器資料中心用電激增及綠能轉型，外銷美國營收大幅攀升，已成為美國 17 家電力公司核心供應商。獲「星際之門」(Stargate) AI 資料中心計畫首期 20 億元變壓器訂單 (OpenAI、SoftBank、Oracle主導)。在手訂單逾 300 億元，能見度至 2028 年。斥資 25 億元擴建台中廠 (2027 Q2 投產 500kV+)。國內客戶涵蓋台電、台積電、台塑。離岸風電客戶含沃旭能源。上游矽鋼片來自日本製鐵、POSCO，銅材來自華新麗華。
+
+## 2308 台達電
+- 板塊/產業: Technology / Electronic Components
+- 題材: 交換式電源供應器, 伺服器電源, 工業自動化, 電動車, 資料中心, 綠能, AI 伺服器, NVIDIA, 電容, 電感, 變壓器, MOSFET
+- 客戶/供應商: 資料中心, NVIDIA, Microsoft, 電動車, Audi, MOSFET, IGBT, 光寶科技, 群光
+- 業務摘要: 台達電 (2308) 是全球最大的交換式電源供應器製造商，以自有品牌 DELTA 行銷全球。產品涵蓋伺服器電源、工業自動化、電動車充電、資料中心電源及綠能解決方案。公司為美系 Tier 1 CSP AI 伺服器電源最大供應商，預計成為 NVIDIA DGX GB200 中 DC/DC 及 AC/DC 電源主要供應商。產能分布中國 60%、泰國、台灣及印度。
+
+## 2330 台積電
+- 板塊/產業: Technology / Semiconductors
+- 題材: 新竹, 半導體, AI, 微影, 蝕刻, ASML, EUV, Applied Materials, Lam Research, Tokyo Electron, 矽晶圓, 環球晶
+- 客戶/供應商: Apple, NVIDIA, AI, AMD, Qualcomm, 聯發科, Broadcom, Intel, Sony, EUV, ASML
+- 業務摘要: 台積電 成立於 1987 年，總部位於台灣新竹。公司是全球最大且最先進的專用積體電路製造服務公司 (Pure-play Foundry)，市佔率超過 60%。台積電引領全球半導體製程技術，目前已量產 3 奈米 (N3) 製程，並積極研發 2 奈米 (N2) 及 A16 技術。公司客戶涵蓋全球主要無晶圓廠 IC 設計公司及 IDM 大廠。台積電是驅動 AI、高效能運算 (HPC)、智慧型手機及車用電子發展的核心引擎。
+
+## 2345 智邦
+- 板塊/產業: Technology / Communication Equipment
+- 題材: Accton Technology, OCP, 1.6T, AI, SmartNIC, AI 伺服器, SONiC, Cisco, Arista, Broadcom, NVIDIA, 光收發模組
+- 客戶/供應商: Amazon, Meta, Microsoft, Google, HP, Dell, AT&T, Broadcom, NVIDIA, 光收發模組, Edgecore, Delta Electronics
+- 業務摘要: 智邦科技 (2345，Accton Technology) 為全球白牌網路交換器 (White-box Switch) 龍頭廠商，市佔率近 49%，同時為開放運算計畫 (OCP) 核心成員。公司成立於 1988 年，總部位於新竹，提供聯合設計製造 (JDM) 服務，涵蓋 400G/800G 至 1.6T 高速資料中心交換器、AI 加速器網卡 (SmartNIC)、開放式封包轉發器及邊緣運算伺服器。 公司直接服務全球超大規模雲端資料中心 (Hyperscalers)，為 AI 伺服器 算力聚落提供核心網路架構。產品採用 SONiC 開放網路作業系統，相較品牌交換器 (如 Cisco、Arista) 總成本僅約 25-35%。展望 2026 年，800G 規格遷移持續帶動網路交換器業務成長，AI 加速器模組進一步放量，獲利可望再創高峰。
+
+## 2360 致茂
+- 板塊/產業: Technology / Scientific & Technical Instruments
+- 題材: 電動車, AI 伺服器, 台積電, NVIDIA, Tesla, 聯發科
+- 客戶/供應商: 台積電, 聯發科, NVIDIA, Tesla
+- 業務摘要: 致茂電子股份有限公司 (2360，Chroma ATE) 成立於 1984 年，為亞洲最大之自動化測試與量測設備製造商。公司提供全方位測試解決方案，產品應用涵蓋：(1) 半導體/IC 測試 — 晶圓級與封裝級測試系統；(2) 電力電子測試 — 電源供應器、電動車充電樁、電池測試；(3) AI 伺服器測試 — 伺服器電源與備援電池測試；(4) 光電檢測 — LED、太陽能、面板檢測；(5) 自動光學檢測 (AOI)。客戶涵蓋台積電、NVIDIA、Tesla等全球科技領導廠商。致茂近年受惠於 AI 伺服器與電動車測試需求強勁成長。
+
+## 2383 台光電
+- 板塊/產業: Technology / Electronic Components
+- 題材: 銅箔基板, AI 伺服器, 低軌衛星, 車用雷達, NVIDIA, AWS, 銅箔, 玻纖布, 富喬, 金像電, 華通, 欣興
+- 客戶/供應商: AI 伺服器, NVIDIA, AWS, 金像電, 華通, 欣興, 銅箔, 玻纖布, 富喬, 聯茂, 台燿, Panasonic
+- 業務摘要: 台光電 (2383) 是全球高速/高頻銅箔基板 (CCL) 市占冠軍，為 AI 伺服器主板材料升級的最大受惠者。公司產品應用於 AI 伺服器、1.6 Tbps 交換器、低軌衛星及車用雷達。為 NVIDIA H100/GB200/GB300 系列 AI 伺服器 OAM 及 UBB 的主要高階 CCL 供應商 (供應比重超過 80%)，亦為 AWS 自研 AI 晶片 Trainium 2/3 的 M8 等級高階材料獨家供應商。
+
+## 6442 光聖
+- 板塊/產業: Technology / Electronic Components
+- 題材: 光通訊, 連接器, 資料中心, AI[[伺服器, 雲端服務, CSP, 網通, Google
+- 客戶/供應商: Google, 資料中心, CSP
+- 業務摘要: 光環科技股份有限公司 (6442，光聖) 是一家專注於光通訊主動與被動元件、以及射頻(RF)連接器的製造商。光環以其優異的光纖跳接線、光被動元件與高頻連接器產品，廣泛應用於電信基礎建設、有線電視寬頻及企業資料中心(Data Center)。隨著AI[[伺服器]]與雲端運算帶來龐大的數據傳輸需求，光聖的高階光被動元件與多芯光纖連接器需求暴增，並成功打入美系大型雲端服務供應商(CSP)的資料中心供應鏈。
+
+## 6515 穎崴
+- 板塊/產業: Technology / Semiconductors
+- 題材: 半導體, AI, 探針卡, 台積電, CoWoS, InFO, CPO, PCB, CSP, NVIDIA, AMD, 日月光投控
+- 客戶/供應商: NVIDIA, AMD, 台積電, CoWoS, 日月光投控, 半導體, Advantest
+- 業務摘要: 穎崴科技股份有限公司 (6515，WinWay) 是一家位居全球前三大的半導體測試介面巨擘，近年更躍升為全球第一大測試座(Test Socket)供應商。穎崴專精於提供AI/HPC、高速網路通訊及手機AP晶片從晶圓端到最終成品的高頻、高功率電性測試解決方案。其「同軸測試座」(Coaxial Socket)與高階探針卡技術，能完美對接台積電CoWoS、InFO等先進封裝以及CPO(共封裝光學)的嚴苛測試需求。全球前20大半導體廠中高達九成皆為其客戶，是AI軍備競賽中「賣鏟子」的標準受惠者。
+
+## 3081 聯亞
+- 板塊/產業: Technology / Semiconductor Equipment & Materials
+- 題材: III-V 族, 化合物半導體, 磊晶, 磷化銦, 砷化鎵, 雷射二極體, LED, 光通訊, 資料中心, 矽光子, CPO, CVD
+- 客戶/供應商: 資料中心, 矽光子, CPO, CVD, 磊晶, II-VI, Lumentum
+- 業務摘要: 聯亞光電 (3081) 是全球領先的 III-V 族化合物半導體磊晶與雷射光源製造商，核心技術為在磷化銦 (InP) 基板上進行原子級精密磊晶。公司產品包括 InP 及 砷化鎵 磊晶片、雷射二極體 (LD) 及 LED，主要應用於光通訊、資料中心、矽光子 (SiPho)/CPO 及工業醫療感測。聯亞站在矽光子/CPO 供應鏈中價值密度最高的關鍵上游位置。
+
+## 4979 華星光
+- 板塊/產業: Technology / Semiconductors
+- 題材: 桃園, 光通訊, Marvell, AI, 資料中心, 5G, 磊晶, 網通, CSP
+- 客戶/供應商: Marvell, CSP, 資料中心, 網通
+- 業務摘要: 華星光通 (LuxNet) 成立於 1999 年，總部位於台灣桃園。公司主要業務為光通訊 主動元件 (Active Components) 之封裝與模組製造，產品包含 光收發模組 (Transceiver)、TOSA/ROSA (光傳送/接收次模組) 及 雷射二極體 (LD)、檢光二極體 (PD)。近年成功轉型，切入 Marvell 供應鏈，成為其 光收發模組代工夥伴，主要應用於 AI 資料中心及 5G 基礎建設。
+
+## 3363 上詮
+- 板塊/產業: Technology / Communication Equipment
+- 題材: 2330_台積電|台積電, CPO, 台積電, Broadcom, AI, 伺服器, 資料中心, 台積電 TSMC, Nvidia 輝達, 奇景光電, 廣化 (5297)
+- 客戶/供應商: 台積電 TSMC, Nvidia 輝達, 奇景光電, 廣化 (5297)
+- 業務摘要: 上詮光纖通信 (FOCI) 是台灣領先的 光纖被動元件 專業製造商，憑藉高精細的對準技術，已轉型為全球 矽光子 (Silicon Photonics) 與 CPO (共同封裝光學) 的關鍵供應商。 公司是 2330_台積電|台積電 主導的矽光子產業聯盟成員，展現極強的技術卡位優勢。 戰略價值與轉型亮點： 1. CPO 關鍵組件: 在 CPO 封裝中，上詮負責提供 光纖陣列單元 (FAU)，这是連接外部光纖與封裝內光學引擎的核心組件，具備極高的進入障礙。 2. 台積電戰略夥伴: 協同台積電與 Broadcom 開發先進的光連結技術，鎖定 2026 年後 AI 伺服器內部高速互連解決方案。 3. AI 資料中心需求: 產品廣泛應用於超大型資料中心 (Hyperscale Data Centers)，如 800G/1.6T 高速光收發模組。 4. 自動化生產: 持續投入自動對準與封裝設備，提升大批量生產穩定度，以應對 AI 時代對頻寬...
+
+## 2408 南亞科
+- 板塊/產業: Technology / Semiconductors
+- 題材: 台塑, 新北, DRAM, ASML, Applied Materials, Lam Research, 矽晶圓, 工業電腦, HP, Dell
+- 客戶/供應商: HP, Dell, 矽晶圓
+- 業務摘要: 南亞科技 (Nanya Technology) 成立於 1995 年，隸屬於台塑集團，總部位於台灣新北。公司是台灣最大的 DRAM (動態隨機存取記憶體) 製造商，也是全球第四大 DRAM 廠。南亞科專注於利基型 DRAM (Consumer DRAM) 及標準型 DRAM (Standard DRAM) 的研發、設計與製造。公司已自主開發 10 奈米級製程技術 (1A, 1B, 1C)，不再依賴國外技術授權，具備獨立研發能力。
+
+## 3037 欣興
+- 板塊/產業: Technology / Electronic Components
+- 題材: Unimicron Technology, PCB, 聯電, ABF 載板, AI 伺服器, Ibiden, NVIDIA, AMD, Intel, CoWoS, Ajinomoto, ABF
+- 客戶/供應商: NVIDIA, AMD, Intel, ABF 載板, Apple, 台積電, CoWoS, Samsung, SK Hynix, Ajinomoto, ABF, 台光電
+- 業務摘要: 欣興電子 (Unimicron Technology) 為全球最大 PCB 與 IC 載板製造商之一，隸屬 聯電 集團。在 ABF 載板領域具統治地位，為 AI 伺服器與高效能運算晶片之關鍵供應商。 核心競爭優勢：(1) ABF 載板 — 全球市佔率約 18%，僅次於日本 Ibiden，為 NVIDIA、AMD、Intel 等高階晶片封裝之核心供應商；(2) HDI 高密度互連板 — 應用於智慧型手機與車用電子；(3) 軟硬結合板 — 應用於穿戴與手機。近年資本支出維持 200 億元以上水準，超過 65% 資金投入 ABF 載板產能擴充。受惠 CoWoS 先進封裝產能吃緊，高階載板需求強勁。
+
+## 2395 研華
+- 板塊/產業: Technology / Computer Hardware
+- 題材: Advantech, 工業電腦, IPC, IIoT, Edge AI, Intel, AMD, NVIDIA, MLCC
+- 客戶/供應商: IPC, Intel, AMD, NVIDIA
+- 業務摘要: 研華科技 (2395，Advantech) 成立於 1981 年，總部位於台北，為全球最大工業電腦 (IPC) 品牌廠暨工業物聯網 (IIoT) 解決方案領導者。公司產品及服務涵蓋嵌入式電腦、工業自動化、智慧系統、Edge AI 邊緣運算及雲端服務。 六大事業群：(1) 工業物聯網自動化 (iAutomation)；(2) 嵌入式物聯網 (Embedded-IoT)；(3) 應用運算 (Applied Computing)；(4) 邊緣伺服器 (Edge Server)；(5) 服務物聯網 (iService)；(6) 研華服務+。2025 Q1 營收 173.5 億元，年增 25%，北美及歐洲需求強勁，能源、醫療及半導體為主要成長動能。全球產能布局涵蓋台灣、中國崑山、美國及歐洲。
+
+## 2454 聯發科
+- 板塊/產業: Technology / Semiconductors
+- 題材: IC 設計, SoC, 天璣, Wi-Fi 7, Wi-Fi 6, ASIC, 車用晶片, 5G, AI, 生成式 AI, 台積電, 聯華電子
+- 客戶/供應商: Samsung, OPPO, vivo, 小米, 傳音, realme, Sony, LG, TP-Link, 華碩, Deutsche Telekom, Lenovo
+- 業務摘要: 聯發科技 (2454) 是全球領先的無晶圓 IC 設計公司，為全球每年超過 20 億台消費性裝置提供晶片。公司核心產品涵蓋智慧型手機 SoC (天璣系列)、Wi-Fi 7/Wi-Fi 6 無線連接晶片、智慧電視 SoC、ASIC 客製化晶片及車用晶片。聯發科在 5G 手機晶片市占率位居全球前二，並積極拓展 AI 運算、生成式 AI 端側推論及高階運算市場。
+
+## 3711 日月光投控
+- 板塊/產業: Technology / Semiconductors
+- 題材: 矽品, 高雄, CoWoS, AI, 5G, 台積電, 聯電, Apple, Dell, Qualcomm, Broadcom, AMD
+- 客戶/供應商: Apple, Qualcomm, Broadcom, AMD, NVIDIA, 力成
+- 業務摘要: 日月光投控投控 (ASE Technology Holding) 成立於 2018 年 (日月光投控與矽品合併)，總部位於台灣高雄。公司為全球 封測 (OSAT) 龍頭，市佔率世界第一。主要業務分為 半導體封測 (ATM) (含日月光投控、矽品) 及 電子代工服務 (EMS) (環旭電子 USI)。日月光投控在 先進封裝 (SiP, Fan-out, 2.5D/3D IC, CoWoS-S/L/R) 及 異質整合 技術領先，為 AI、5G、HPC 晶片之關鍵後段合作夥伴。
+
+## 3163 波若威
+- 板塊/產業: Technology / Communication Equipment
+- 題材: Browave, WDM, PLC, CPO, NVIDIA, 矽光子, 800G, 1.6T, 統新, Google, 上詮, 華星光
+- 客戶/供應商: NVIDIA, Google, 統新, 上詮, 華星光
+- 業務摘要: 波若威科技 (3163，Browave) 為台灣最大光纖被動元件與模組製造商，專精於 WDM (波分複用器)、PLC 分光器及光纖連接器等高精度光學元件之 OEM/ODM 代工。核心技術涵蓋熔錐雙錐 (FBT)、微光學 (Micro Optics) 及平面光波迴路 (PLC) 三大光纖被動元件平台。 近年積極佈局 CPO (共同封裝光學) 技術，已獲 NVIDIA 選定為 矽光子 生態系合作夥伴，開發光纖套件 (Fiber Harness) 及光纖配線盒產品。CPO 產品預計 2025 年下半年完成驗證，2026 年進入量產，配合 800G/1.6T 高階光纖連接需求，將成為公司主要成長動能。此外受惠美國 BEAD 寬頻法案帶動北美光纖基建需求，公司亦積極擴充菲律賓廠產能。
+
+## 4958 臻鼎-KY
+- 板塊/產業: Technology / Electronic Components
+- 題材: 鴻海, FPC, SLP, BT 載板, ABF 載板, AI 伺服器, 銅箔, CCL, 台光電, 聯茂, 台燿, 尖點
+- 客戶/供應商: Apple, Amazon, Microsoft, 台光電, 聯茂, 尖點
+- 業務摘要: 臻鼎-KY (Zhen Ding Tech) 為全球最大 印刷電路板 (PCB) 製造商。 隸屬於 鴻海 集團 (鴻海)，提供「One ZDT」一站式購足服務。 產品線極其完整： 1. 軟板 (FPC): 全球市佔第一，主要應用於手機 (iPhone)、平板。 2. 類載板 (SLP) / HDI: 高階手機主板。 3. IC 載板: BT 載板 (秦皇島廠) 與 ABF 載板 (深圳/高雄廠)，積極切入 AI 伺服器與車載領域。 4. 硬板 (RPCB): 伺服器、車用板。 近年重心轉向 AI 伺服器 與 IC 載板 之高階產能擴充。
+
+## 2368 金像電
+- 板塊/產業: Technology / Electronic Components
+- 題材: PCB, 伺服器, UBB, AI 伺服器, 銅箔, 台光電, 華通, 欣興, 健鼎
+- 客戶/供應商: AI 伺服器, 台光電, 華通, 欣興, 健鼎
+- 業務摘要: 金像電子 (2368) 是台灣專業的多層PCB (PCB) 製造商，主力產品為高層數伺服器主板、UBB (統一基板)、背板及多層板。公司聚焦伺服器與網通 PCB，受惠於 AI 伺服器對高層數複雜 PCB 的強勁需求。
+
+## 3030 德律
+- 板塊/產業: Technology / Scientific & Technical Instruments
+- 題材: AI 伺服器, 鴻海, 廣達, 緯創, Apple, Tesla
+- 客戶/供應商: 鴻海, 廣達, 緯創, Apple, Tesla
+- 業務摘要: 德律科技股份有限公司 (3030，TRI) 為台灣最大的自動光學檢測設備 (AOI) 廠商，全球市佔率名列前茅。專注於電路板組裝檢測 (PCBA Test)。四大主力產品：(1) AOI 自動光學檢測 — 檢測零件焊接品質 (營收佔比最高)；(2) SPI 錫膏檢測 — 印刷厚度檢測；(3) AXI X-ray 檢測 — BGA 等隱藏焊點檢測；(4) ICT 電路板測試 — 電氣功能測試。受惠於AI 伺服器與車用電子製程日益複雜，對高階檢測設備需求強勁。
+
+## 3653 健策
+- 板塊/產業: Technology / Electronic Components
+- 題材: 散熱, 伺服器, AI, AI 伺服器, AMD, Intel, NVIDIA, 連接器, 自動化, 鴻海, 廣達, 緯創
+- 客戶/供應商: 半導體, AMD, Intel, NVIDIA, 雲端服務, CSP, AI
+- 業務摘要: 健策精密 (Kenmec) 為台灣最大的 均熱片 (Vapor Chamber) 供應商，也是全球精密沖壓及散熱解決方案的領導者。 公司產品廣泛應用於伺服器、AI 運算、車用電子及通訊領域。 核心優勢與亮點： 1. AI 伺服器供應鏈: 為 AMD、Intel 及 NVIDIA 的關鍵供應商，供應其 GPU 與 CPU 所需的高階均熱片與散熱模組。 2. 散熱技術領先: 具備冷鍛均熱片、真空腔散熱技術，並積極佈局 AI 伺服器所需的 液冷 散熱模組與微通道蓋板 (MCL)。 3. 伺服器扣件 (ILM): 具備伺服器處理器連接器緊固件 (ILM) 的設計與製造能力，在伺服器市場具備極高市佔。 4. 自動化能量: 具備自有自動化設備開發團隊，支援生產線高度自動化，提升產品良率與交期競爭力。
+
+## 6173 信昌電
+- 板塊/產業: Technology / Semiconductor Equipment & Materials
+- 題材: 華新科, MLCC, AI[[伺服器, 電動車, 5G, EMS, 網通
+- 客戶/供應商: 華新科, AI[[伺服器, 網通
+- 業務摘要: 信昌電子陶瓷股份有限公司 (6173) 隸屬於華新科技集團，是一家專注於利基型被動元件與關鍵陶瓷材料(介電瓷粉)的製造商。信昌電具備從「原料瓷粉」到「元件成品」的垂直整合與100%台灣製造優勢。其核心產品聚焦於高功率、高電壓及大尺寸的特殊型MLCC(積層陶瓷電容)與電阻/電感。近年來受惠於AI[[伺服器]](MLCC用量為傳統的十倍)、電動車、5G基地台及快充等高階應用需求爆發，信昌電在高規元件市場佔有重要地位。
+
+## 7828 創新服務
+- 板塊/產業: Industrials / Specialty Industrial Machinery
+- 題材: 探針卡, Technoprobe, TGV
+- 客戶/供應商: Technoprobe, 探針卡, TGV
+- 業務摘要: 創新服務 (7828，Innovision) 專精MEMS探針卡自動植針設備。2025年獲全球探針卡龍頭Technoprobe入股 (持股近一成) 結盟，取得台灣及中國探針卡代理權。三大業務：植針設備、探針卡銷售維修、先進封裝模組 (銅柱/TGV玻璃基板中介層)。攜手晶呈科開發TGV。
+
+## 2357 華碩
+- 板塊/產業: Technology / Computer Hardware
+- 題材: ASUSTeK Computer, AI 伺服器, NVIDIA, AIoT, 和碩, Intel, AMD, Samsung, SK 海力士, Micron, 友達, 群創
+- 客戶/供應商: Amazon, NVIDIA, Intel, AMD, 和碩, 友達, 群創, LG Display
+- 業務摘要: 華碩電腦 (2357，ASUSTeK Computer) 成立於 1989 年，總部位於台北，為全球頂級 PC 品牌暨 AI 伺服器解決方案供應商。公司擁有逾 5,000 名研發人員及遍布全球 98 國超過 1,000 個服務中心，產品線橫跨消費及企業市場。 消費事業涵蓋：筆記型電腦、桌上型電腦、主機板、顯示卡 (ROG/TUF Gaming/ASUS 品牌)、顯示器、路由器及周邊。電競品牌 ROG (Republic of Gamers) 為全球電競市場領導品牌。企業事業方面，華碩積極布局 AI 伺服器，推出搭載 NVIDIA GB300 NVL72 之 AI POD 平台，並拓展 AIoT 工業解決方案、車用電子及醫療機器人等新領域。旗下重要子公司包括和碩 (4938，和碩，EMS 代工) 及亞旭電腦 (Askey，網通)。
+
+## 6207 雷科
+- 板塊/產業: Technology / Electronic Components
+- 題材: 半導體, 台積電, CoWoS, NVIDIA, AI[[伺服器, EMS, 國巨, 華新科
+- 客戶/供應商: 國巨, 華新科, 台積電, CoWoS, NVIDIA
+- 業務摘要: 雷科股份有限公司 (6207) 是一家在關鍵製程設備領域扮演重要角色的電子零組件及設備代理製造商。公司的三大核心業務為：SMD包裝材料製造、雷射設備研發製造，以及SMT(表面黏著技術)設備代理。在雷射設備端，雷科的晶片電阻設備雷射修整機擁有極高全球市佔(約60%)；更重要的是，其半導體雷射切割機與量測設備已成功打入台積電 CoWoS先進封裝及NVIDIA(輝達)主力封測廠供應鏈，受惠AI[[伺服器]]擴產潮，訂單能見度極高。
