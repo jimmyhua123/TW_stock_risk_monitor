@@ -15,9 +15,14 @@ from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
-from risk_monitor import get_trading_date
-from risk_monitor_history import get_previous_trading_days
-from stock_monitor import StockDataFetcher
+try:
+    from .risk_monitor import get_trading_date
+    from .risk_monitor_history import get_previous_trading_days
+    from .stock_monitor import StockDataFetcher
+except ImportError:
+    from risk_monitor import get_trading_date
+    from risk_monitor_history import get_previous_trading_days
+    from stock_monitor import StockDataFetcher
 
 
 # ─────────────────────────────────────────────

@@ -11,6 +11,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_BRIEFING_DIR = PROJECT_ROOT / "docs" / "notes" / "每日看盤筆記"
 
 
 SIGNAL_LABELS = {
@@ -245,7 +246,7 @@ def write_briefing(date: str, output_path: Path | None = None) -> Path:
     coverage_data = load_json(coverage_path) if coverage_path else {}
 
     markdown = build_briefing_markdown(date, market_data, derivatives_data, coverage_data)
-    output_path = output_path or PROJECT_ROOT / "docs" / "notes" / "看盤筆記" / f"{date}.md"
+    output_path = output_path or DEFAULT_BRIEFING_DIR / f"{date}.md"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8")
     return output_path

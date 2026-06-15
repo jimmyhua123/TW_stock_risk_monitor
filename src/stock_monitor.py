@@ -21,8 +21,12 @@ import re
 from bs4 import BeautifulSoup
 
 # 匯入現有模組
-from risk_monitor import get_trading_date
-from risk_monitor_history import get_previous_trading_days
+try:
+    from .risk_monitor import get_trading_date
+    from .risk_monitor_history import get_previous_trading_days
+except ImportError:
+    from risk_monitor import get_trading_date
+    from risk_monitor_history import get_previous_trading_days
 
 class StockDataFetcher:
     """個股資料抓取器 (支援上市 TWSE + 上櫃 TPEx)"""

@@ -13,7 +13,10 @@ from io import StringIO
 from typing import Dict, Any, List
 
 
-from trading_calendar import get_previous_trading_days
+try:
+    from .trading_calendar import get_previous_trading_days
+except ImportError:
+    from trading_calendar import get_previous_trading_days
 
 class HistoricalDataFetcher:
     """歷史數據抓取器"""

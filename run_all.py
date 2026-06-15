@@ -83,6 +83,12 @@ def main():
     cmd5 = [PYTHON, os.path.join('src', 'coverage_enrichment.py')] + date_args
     run_step(5, '個股產業與題材補充 (coverage_enrichment.py)', cmd5)
 
+    # --- 步驟 5.5: Watchlist 族群分析 ---
+    cmd_group = [PYTHON, os.path.join('src', 'group_monitor.py')] + date_args
+    if not args.date:
+        cmd_group += ['--report', os.path.join('outputs', 'json', 'risk_report.json')]
+    run_step('5.5', 'Watchlist 族群分析 (group_monitor.py)', cmd_group)
+
     # --- 步驟 6: 股期換月轉倉逆價差監控 ---
     cmd6 = [PYTHON, os.path.join('src', 'stock_futures_rollover.py')] + date_args
     run_step(6, '股期換月轉倉逆價差監控 (stock_futures_rollover.py)', cmd6)
@@ -99,12 +105,13 @@ def main():
     print(f" ✅ 全部完成！")
     print(f"    台灣報告: outputs/monitor_xlsx/{output_xlsx}")
     print(f"    台灣 JSON: outputs/json/")
+    print(f"    Watchlist 族群分析: outputs/group_json/ / outputs/group_txt/")
     print(f"    全球 JSON: outputs/global_json/")
     print(f"    衍生品 JSON: outputs/derivatives_json/")
     print(f"    題材補充 JSON: outputs/coverage_json/")
     print(f"    股期換月價差: outputs/rollover_json/ / outputs/rollover_txt/")
     if args.date:
-        print(f"    每日看盤筆記: docs/notes/看盤筆記/{args.date}.md")
+        print(f"    每日看盤筆記: docs/notes/每日看盤筆記/{args.date}.md")
     print(f"    啟動儀表板: python web/server.py")
     print(f"{'='*60}")
 

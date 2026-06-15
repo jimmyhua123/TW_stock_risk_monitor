@@ -1,9 +1,14 @@
 import unittest
+from pathlib import Path
 
-from src.daily_briefing import build_briefing_markdown, build_coverage_index
+from src.daily_briefing import DEFAULT_BRIEFING_DIR, build_briefing_markdown, build_coverage_index
 
 
 class DailyBriefingTests(unittest.TestCase):
+    def test_default_briefing_dir_is_separate_from_intraday_notes(self):
+        self.assertEqual(DEFAULT_BRIEFING_DIR, Path("docs/notes/每日看盤筆記").resolve())
+        self.assertNotEqual(DEFAULT_BRIEFING_DIR, Path("docs/notes/看盤筆記").resolve())
+
     def test_build_coverage_index_uses_four_digit_codes(self):
         coverage = {
             "items": [

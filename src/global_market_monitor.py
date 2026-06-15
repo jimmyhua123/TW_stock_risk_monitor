@@ -6,7 +6,6 @@
 輸出為獨立的 JSON 及 Excel 報表
 """
 
-import sys
 import os
 import argparse
 import json
@@ -15,20 +14,22 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 
-# 加入 src 路徑以引用共用模組
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# 匯入共用模組；支援 package 匯入與直接執行腳本
 try:
-    from risk_monitor import get_trading_date
+    from .risk_monitor import get_trading_date
 except ImportError:
-    def get_trading_date(date_str=None):
-        if date_str:
-            return date_str
-        now = datetime.now()
-        if now.weekday() == 5:
-            now -= timedelta(days=1)
-        elif now.weekday() == 6:
-            now -= timedelta(days=2)
-        return now.strftime("%Y%m%d")
+    try:
+        from risk_monitor import get_trading_date
+    except ImportError:
+        def get_trading_date(date_str=None):
+            if date_str:
+                return date_str
+            now = datetime.now()
+            if now.weekday() == 5:
+                now -= timedelta(days=1)
+            elif now.weekday() == 6:
+                now -= timedelta(days=2)
+            return now.strftime("%Y%m%d")
 
 # === 全球市場清單 ===
 GLOBAL_ASSETS = {

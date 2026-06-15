@@ -1,0 +1,23 @@
+{
+  "description": "watchlist 可先只放 code/name；若要啟用族群分析，建議補 groups、thesis、peers、risk_notes、priority。",
+  "watchlist": [
+    {
+      "code": "2330",
+      "name": "台積電",
+      "groups": ["半導體", "AI", "先進製程"],
+      "thesis": "AI 伺服器需求與先進製程報價能力",
+      "peers": ["2454", "3034", "3661"],
+      "risk_notes": ["匯率", "美國科技股修正", "資本支出循環"],
+      "priority": "core"
+    },
+    {
+      "code": "0050",
+      "name": "元大台灣50",
+      "groups": ["ETF", "大盤觀察"],
+      "thesis": "作為台股權值股風向參考",
+      "peers": [],
+      "risk_notes": ["大盤系統性風險"],
+      "priority": "reference"
+    }
+  ]
+}

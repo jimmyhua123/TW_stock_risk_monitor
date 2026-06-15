@@ -5,7 +5,6 @@
 整合單日數據、歷史統計與個股籌碼監控，輸出 Excel 報表
 """
 
-import sys
 import os
 import argparse
 from datetime import datetime, timedelta
@@ -13,12 +12,15 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
-
 # 匯入現有模組
-from risk_monitor import RiskMonitor, get_trading_date
-from risk_monitor_history import HistoricalDataFetcher
-from stock_monitor import StockMonitor
+try:
+    from src.risk_monitor import RiskMonitor, get_trading_date
+    from src.risk_monitor_history import HistoricalDataFetcher
+    from src.stock_monitor import StockMonitor
+except ImportError:
+    from risk_monitor import RiskMonitor, get_trading_date
+    from risk_monitor_history import HistoricalDataFetcher
+    from stock_monitor import StockMonitor
 
 
 class IntegratedRiskReport:

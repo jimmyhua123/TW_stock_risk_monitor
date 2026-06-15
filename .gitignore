@@ -2,3 +2,21 @@ data/external/
 __pycache__/
 *.pyc
 *.pyc.*
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Generated reports and local scratch output
+outputs/
+monitor_xlsx/
+gold/
+scratch/
