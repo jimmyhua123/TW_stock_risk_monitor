@@ -24,13 +24,25 @@ python run_all.py --date 20260612
 python daily_run.py --date 20260612
 ```
 
-4. 只產生 watchlist 族群分析：
+4. 低頻或月底更新較重資料：
+
+```bash
+python monthly_run.py --date 20260612
+```
+
+5. 盤中即時觀察 watchlist 漲跌：
+
+```bash
+python src/intraday_monitor.py
+```
+
+6. 只產生 watchlist 族群分析：
 
 ```bash
 python src/group_monitor.py --date 20260611
 ```
 
-5. 開啟 Web Dashboard：
+7. 開啟 Web Dashboard：
 
 ```bash
 python web/server.py
@@ -92,6 +104,10 @@ data/config/watchlist.example.json
 | `python run_all.py --date YYYYMMDD` | 一鍵產出主要報告、JSON/TXT、族群分析與補充資料 |
 | `python daily_run.py --date YYYYMMDD` | 每日看盤常用流程，略過不一定需要日更的全球市場、股期換月與題材補充 |
 | `python daily_run.py --date YYYYMMDD --refresh-coverage` | 每日流程加上題材補充刷新；新增 watchlist 股票或想更新自動 groups 時使用 |
+| `python daily_run.py --date YYYYMMDD --force-refresh` | 即使當日 JSON 已存在，也重新抓取日更資料 |
+| `python monthly_run.py --date YYYYMMDD` | 低頻/月度刷新全球市場、題材補充與股期換月 |
+| `python monthly_run.py --date YYYYMMDD --include-sector-flow` | 低頻流程加上較重的美股產業資金流報告 |
+| `python src/intraday_monitor.py` | 盤中即時觀察 watchlist 漲跌與輸出 MMDD 盤中筆記 |
 | `python main.py --date YYYYMMDD --output YYYYMMDD.xlsx` | 產出台股風險 Excel |
 | `python src/excel_to_json.py outputs/monitor_xlsx/YYYYMMDD.xlsx` | 將 Excel 轉成 JSON/TXT |
 | `python src/group_monitor.py --date YYYYMMDD` | 依 watchlist 產生族群分析 |
@@ -151,20 +167,41 @@ data/config/watchlist.example.json
 2. 可以只放 `code/name`；程式會用 coverage 資料自動推導 groups。
 3. 如果你想手動控制，也可以用 `groups` 把股票歸到族群，例如 AI、散熱、PCB、半導體設備。
 4. 用 `thesis` 寫下你關注它的理由，用 `risk_notes` 寫下你想每天提醒自己的風險。
-5. 收盤後跑日常流程：
+5. 盤中需要快速看 watchlist 漲跌時跑：
+
+```bash
+python src/intraday_monitor.py
+```
+
+6. 收盤後跑日常流程：
 
 ```bash
 python daily_run.py --date YYYYMMDD
 ```
 
-6. 如果你剛新增 watchlist 股票，想讓程式重新抓題材並推導 groups：
+7. 如果你剛新增 watchlist 股票，想讓程式重新抓題材並推導 groups：
 
 ```bash
 python daily_run.py --date YYYYMMDD --refresh-coverage
 ```
 
-7. 先讀 `outputs/group_txt/group_YYYYMMDD.txt`，看今天哪個族群最強、哪幾檔需要追蹤。
-8. 再打開 Excel/Web Dashboard 看細節。
+8. 每月或低頻更新較重資料時跑：
+
+```bash
+python monthly_run.py --date YYYYMMDD
+```
+
+9. 先讀 `outputs/group_txt/group_YYYYMMDD.txt`，看今天哪個族群最強、哪幾檔需要追蹤。
+10. 再打開 Excel/Web Dashboard 看細節。
+
+`daily_run.py` 會優先使用既有輸出，避免同一天重複打 API：
+
+- 已有 `outputs/json/YYYYMMDD.json` 時，不重跑 `main.py` 和 `excel_to_json.py`。
+- 已有 `outputs/derivatives_json/derivatives_YYYYMMDD.json` 時，不重跑衍生品抓取。
+- 已有 `outputs/coverage_json/coverage_YYYYMMDD.json` 時，不重跑題材補充。
+- `group_monitor.py` 和 `daily_briefing.py` 會使用上述既有資料做本地分析。
+
+如果資料源當天有修正，或你想強制重抓，使用 `--force-refresh`。
 
 ## 開發與測試
 

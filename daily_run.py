@@ -26,23 +26,54 @@ def run_step(step_num: str, description: str, cmd: list[str]) -> int:
     return result.returncode
 
 
-def build_steps(date: str | None, refresh_coverage: bool = False) -> list[tuple[str, str, list[str]]]:
+def dated_output_paths(date: str | None, project_root: Path = PROJECT_ROOT) -> dict[str, Path]:
+    return {
+        "market_json": project_root / "outputs" / "json" / (f"{date}.json" if date else "risk_report.json"),
+        "monitor_xlsx": project_root / "outputs" / "monitor_xlsx" / (f"{date}.xlsx" if date else "risk_report.xlsx"),
+        "derivatives_json": project_root / "outputs" / "derivatives_json" / f"derivatives_{date}.json" if date else project_root / "outputs" / "derivatives_json",
+        "coverage_json": project_root / "outputs" / "coverage_json" / f"coverage_{date}.json" if date else project_root / "outputs" / "coverage_json",
+    }
+
+
+def build_steps(
+    date: str | None,
+    refresh_coverage: bool = False,
+    *,
+    force_refresh: bool = False,
+    project_root: Path = PROJECT_ROOT,
+    verbose: bool = False,
+) -> list[tuple[str, str, list[str]]]:
     date_args = ["--date", date] if date else []
     output_xlsx = f"{date}.xlsx" if date else "risk_report.xlsx"
     market_report = os.path.join("outputs", "json", f"{date}.json" if date else "risk_report.json")
+    outputs = dated_output_paths(date, project_root)
 
-    steps: list[tuple[str, str, list[str]]] = [
-        ("1", "台灣風險監控報告", [PYTHON, "main.py", *date_args, "--output", output_xlsx]),
-        (
-            "2",
-            "Excel 轉 JSON / TXT",
-            [PYTHON, os.path.join("src", "excel_to_json.py"), os.path.join("outputs", "monitor_xlsx", output_xlsx)],
-        ),
-        ("3", "期貨與選擇權風險", [PYTHON, os.path.join("src", "derivatives_monitor.py"), *date_args]),
-    ]
+    steps: list[tuple[str, str, list[str]]] = []
 
-    if refresh_coverage:
+    if force_refresh or not outputs["market_json"].is_file():
+        steps.append(("1", "台灣風險監控報告", [PYTHON, "main.py", *date_args, "--output", output_xlsx]))
+        steps.append(
+            (
+                "2",
+                "Excel 轉 JSON / TXT",
+                [PYTHON, os.path.join("src", "excel_to_json.py"), os.path.join("outputs", "monitor_xlsx", output_xlsx)],
+            )
+        )
+    else:
+        if verbose:
+            print(f"[SKIP] 已有台灣 JSON，略過重抓: {outputs['market_json']}")
+
+    if force_refresh or not outputs["derivatives_json"].is_file():
+        steps.append(("3", "期貨與選擇權風險", [PYTHON, os.path.join("src", "derivatives_monitor.py"), *date_args]))
+    else:
+        if verbose:
+            print(f"[SKIP] 已有衍生品 JSON，略過重抓: {outputs['derivatives_json']}")
+
+    if refresh_coverage or (date and not outputs["coverage_json"].is_file()):
         steps.append(("4", "個股產業與題材補充", [PYTHON, os.path.join("src", "coverage_enrichment.py"), *date_args]))
+    elif date:
+        if verbose:
+            print(f"[SKIP] 已有題材補充 JSON，略過重抓: {outputs['coverage_json']}")
 
     group_cmd = [PYTHON, os.path.join("src", "group_monitor.py"), *date_args]
     if not date:
@@ -71,12 +102,22 @@ def main() -> None:
         action="store_true",
         help="同時刷新題材補充。watchlist 新增股票、想更新自動 groups 時使用。",
     )
+    parser.add_argument(
+        "--force-refresh",
+        action="store_true",
+        help="即使已有當日輸出，也重新抓取所有日更資料。",
+    )
     args = parser.parse_args()
 
     date_label = args.date or "最新交易日"
     print(f"每日流程啟動：{date_label}")
 
-    for step_num, description, cmd in build_steps(args.date, args.refresh_coverage):
+    for step_num, description, cmd in build_steps(
+        args.date,
+        args.refresh_coverage,
+        force_refresh=args.force_refresh,
+        verbose=True,
+    ):
         run_step(step_num, description, cmd)
 
     print("\n[DONE] daily_run 完成")
