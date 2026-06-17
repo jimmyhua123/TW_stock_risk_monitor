@@ -21,7 +21,7 @@ python run_all.py --date 20260612
 3. 每日看盤建議使用較輕量的日更流程：
 
 ```bash
-python daily_run.py --date 20260615
+python daily_run.py --date 20260616
 ```
 
 4. 低頻或月底更新較重資料：
