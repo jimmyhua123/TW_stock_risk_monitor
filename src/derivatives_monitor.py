@@ -5,6 +5,7 @@
 import argparse
 import csv
 import json
+import math
 import os
 import re
 from datetime import datetime, timedelta
@@ -22,6 +23,7 @@ except ImportError:
 
 
 TAIFEX_BASE_URL = "https://www.taifex.com.tw"
+TAIFEX_MIS_URL = "https://mis.taifex.com.tw/futures/api/getQuoteList"
 
 
 def parse_number(value: Any) -> Optional[float]:
@@ -77,14 +79,167 @@ def assess_foreign_futures(net_open_interest: Optional[float]) -> str:
     return "neutral"
 
 
+def assess_night_session(change_pct: Optional[float]) -> str:
+    if change_pct is None:
+        return "unknown"
+    if change_pct <= -1.8:
+        return "strong_bearish"
+    if change_pct <= -1.0:
+        return "bearish"
+    if change_pct >= 1.0:
+        return "bullish"
+    return "neutral"
+
+
+def assess_option_skew(skew_pressure: Optional[float]) -> str:
+    if skew_pressure is None:
+        return "unknown"
+    if skew_pressure >= 0.40:
+        return "put_skew"
+    if skew_pressure <= -0.20:
+        return "call_skew"
+    return "neutral"
+
+
+def calculate_option_skew(
+    option_rows: List[Dict[str, Any]],
+    spot: Optional[float],
+    *,
+    days_to_expiry: int = 30,
+    risk_free_rate: float = 0.015,
+) -> Dict[str, Any]:
+    if spot is None:
+        return {"skew_pressure": None, "skew_signal": "unknown", "source_note": "missing spot"}
+
+    calls = []
+    puts = []
+    for row in option_rows:
+        strike = parse_number(row.get("strike"))
+        price = parse_number(row.get("settlement") or row.get("close") or row.get("last"))
+        side = str(row.get("side", "")).lower()
+        if strike is None or price is None or price <= 0:
+            continue
+        item = {"strike": float(strike), "price": float(price)}
+        if side.startswith("c"):
+            calls.append(item)
+        elif side.startswith("p"):
+            puts.append(item)
+
+    if not calls or not puts:
+        return {"skew_pressure": None, "skew_signal": "unknown", "source_note": "missing call/put rows"}
+
+    strikes = sorted({item["strike"] for item in calls + puts})
+    atm_strike = min(strikes, key=lambda strike: abs(strike - spot))
+    atm_call = next((item for item in calls if item["strike"] == atm_strike), None)
+    atm_put = next((item for item in puts if item["strike"] == atm_strike), None)
+    otm_call = next((item for item in sorted(calls, key=lambda item: item["strike"]) if item["strike"] > atm_strike), None)
+    otm_put = next((item for item in sorted(puts, key=lambda item: item["strike"], reverse=True) if item["strike"] < atm_strike), None)
+
+    if not atm_call or not atm_put or not otm_call or not otm_put:
+        return {
+            "atm_strike": atm_strike,
+            "skew_pressure": None,
+            "skew_signal": "unknown",
+            "source_note": "missing neighboring OTM strikes",
+        }
+
+    put_ratio = otm_put["price"] / atm_put["price"]
+    call_ratio = otm_call["price"] / atm_call["price"]
+    skew_pressure = round(put_ratio - call_ratio, 4)
+    years_to_expiry = max(days_to_expiry, 1) / 365
+    atm_call_iv = implied_volatility("call", spot, atm_strike, years_to_expiry, risk_free_rate, atm_call["price"])
+    atm_put_iv = implied_volatility("put", spot, atm_strike, years_to_expiry, risk_free_rate, atm_put["price"])
+    otm_call_iv = implied_volatility("call", spot, otm_call["strike"], years_to_expiry, risk_free_rate, otm_call["price"])
+    otm_put_iv = implied_volatility("put", spot, otm_put["strike"], years_to_expiry, risk_free_rate, otm_put["price"])
+    iv_skew = None
+    if otm_call_iv is not None and otm_put_iv is not None:
+        iv_skew = round(otm_put_iv - otm_call_iv, 4)
+    return {
+        "atm_strike": atm_strike,
+        "atm_call": atm_call["price"],
+        "atm_put": atm_put["price"],
+        "otm_call_strike": otm_call["strike"],
+        "otm_call": otm_call["price"],
+        "otm_put_strike": otm_put["strike"],
+        "otm_put": otm_put["price"],
+        "put_ratio": round(put_ratio, 4),
+        "call_ratio": round(call_ratio, 4),
+        "skew_pressure": skew_pressure,
+        "atm_call_iv": atm_call_iv,
+        "atm_put_iv": atm_put_iv,
+        "otm_call_iv": otm_call_iv,
+        "otm_put_iv": otm_put_iv,
+        "iv_skew": iv_skew,
+        "skew_signal": assess_option_skew(skew_pressure),
+        "source_note": "TXO near-month option price skew",
+    }
+
+
+def normal_cdf(value: float) -> float:
+    return 0.5 * (1 + math.erf(value / math.sqrt(2)))
+
+
+def black_scholes_price(
+    side: str,
+    spot: float,
+    strike: float,
+    years_to_expiry: float,
+    risk_free_rate: float,
+    volatility: float,
+) -> float:
+    if spot <= 0 or strike <= 0 or years_to_expiry <= 0 or volatility <= 0:
+        return 0.0
+    d1 = (math.log(spot / strike) + (risk_free_rate + 0.5 * volatility * volatility) * years_to_expiry) / (
+        volatility * math.sqrt(years_to_expiry)
+    )
+    d2 = d1 - volatility * math.sqrt(years_to_expiry)
+    discounted_strike = strike * math.exp(-risk_free_rate * years_to_expiry)
+    if side == "call":
+        return spot * normal_cdf(d1) - discounted_strike * normal_cdf(d2)
+    return discounted_strike * normal_cdf(-d2) - spot * normal_cdf(-d1)
+
+
+def implied_volatility(
+    side: str,
+    spot: float,
+    strike: float,
+    years_to_expiry: float,
+    risk_free_rate: float,
+    option_price: float,
+) -> Optional[float]:
+    intrinsic = max(0.0, spot - strike) if side == "call" else max(0.0, strike - spot)
+    if option_price <= intrinsic or spot <= 0 or strike <= 0:
+        return None
+
+    low = 0.0001
+    high = 5.0
+    for _ in range(60):
+        mid = (low + high) / 2
+        price = black_scholes_price(side, spot, strike, years_to_expiry, risk_free_rate, mid)
+        if price > option_price:
+            high = mid
+        else:
+            low = mid
+    return round((low + high) / 2, 4)
+
+
+def third_wednesday(year: int, month: int) -> datetime:
+    first_day = datetime(year, month, 1)
+    days_to_wednesday = (2 - first_day.weekday()) % 7
+    return first_day + timedelta(days=days_to_wednesday + 14)
+
+
 def calculate_summary(payload: Dict[str, Any]) -> Dict[str, Any]:
     signals = []
     score = 50
 
     signal_weights = {
         "bearish": 15,
+        "strong_bearish": 8,
         "hedging_pressure": 10,
+        "put_skew": 6,
         "call_speculation": 5,
+        "call_skew": -3,
         "bullish": -10,
         "neutral": 0,
         "unknown": 0,
@@ -94,6 +249,8 @@ def calculate_summary(payload: Dict[str, Any]) -> Dict[str, Any]:
         ("台指期基差", payload.get("futures", {}).get("basis_signal")),
         ("外資期貨部位", payload.get("positioning", {}).get("foreign_tx_net_signal")),
         ("選擇權 Put/Call Ratio", payload.get("options", {}).get("pc_ratio_signal")),
+        ("TXF night session", payload.get("night_session", {}).get("night_signal")),
+        ("TXO option skew", payload.get("options", {}).get("skew_signal")),
     ]
 
     for name, signal in checks:
@@ -127,6 +284,8 @@ class DerivativesMonitor:
         spot = self.fetch_taiex_spot()
         positioning = self.fetch_foreign_tx_position()
         pc = self.fetch_pc_ratio()
+        night = self.fetch_txf_night_session()
+        option_skew = self.fetch_option_skew(spot)
 
         basis = None
         basis_pct = None
@@ -154,10 +313,110 @@ class DerivativesMonitor:
                 "pc_ratio": pc.get("latest"),
                 "pc_ratio_5d_avg": pc.get("five_day_avg"),
                 "pc_ratio_signal": assess_pc_ratio(pc.get("latest")),
+                "skew_pressure": option_skew.get("skew_pressure"),
+                "skew_signal": option_skew.get("skew_signal"),
+                "atm_strike": option_skew.get("atm_strike"),
+                "put_ratio": option_skew.get("put_ratio"),
+                "call_ratio": option_skew.get("call_ratio"),
+                "atm_call_iv": option_skew.get("atm_call_iv"),
+                "atm_put_iv": option_skew.get("atm_put_iv"),
+                "otm_call_iv": option_skew.get("otm_call_iv"),
+                "otm_put_iv": option_skew.get("otm_put_iv"),
+                "iv_skew": option_skew.get("iv_skew"),
+                "skew_source_note": option_skew.get("source_note"),
+            },
+            "night_session": {
+                "txf_last_price": night.get("last_price"),
+                "txf_change_pct": night.get("change_pct"),
+                "txf_volume": night.get("volume"),
+                "night_signal": assess_night_session(night.get("change_pct")),
+                "source_note": night.get("source_note"),
             },
         }
         payload["summary"] = calculate_summary(payload)
         return payload
+
+    def fetch_txf_night_session(self) -> Dict[str, Any]:
+        payloads = [
+            {"MarketType": "1", "SymbolType": "F", "KindID": "1", "CID": "TXF", "ExpireMonths": "", "SymbolFormat": "0"},
+            {"MarketType": "0", "SymbolType": "F", "KindID": "1", "CID": "TXF", "ExpireMonths": "", "SymbolFormat": "0"},
+        ]
+        for payload in payloads:
+            try:
+                response = requests.post(TAIFEX_MIS_URL, json=payload, timeout=8)
+                response.raise_for_status()
+                items = response.json().get("RtData", {}).get("QuoteList", [])
+                if not items:
+                    continue
+                item = items[0]
+                return {
+                    "last_price": parse_number(item.get("CLastPrice")),
+                    "change_pct": parse_number(item.get("CDiffRate")),
+                    "volume": parse_number(item.get("CTotalVolume")),
+                    "source_note": f"mis.taifex MarketType={payload['MarketType']}",
+                }
+            except Exception as exc:
+                last_error = str(exc)
+        return {"last_price": None, "change_pct": None, "volume": None, "source_note": f"unavailable: {locals().get('last_error', 'no data')}"}
+
+    def fetch_option_skew(self, spot: Optional[float]) -> Dict[str, Any]:
+        url = f"{TAIFEX_BASE_URL}/cht/3/optDailyMarketReport"
+        params = {
+            "queryType": "2",
+            "marketCode": "0",
+            "dateaddcnt": "",
+            "queryDate": self.formatted_date,
+            "commodity_id": "TXO",
+        }
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            tables = pd.read_html(StringIO(response.text))
+            rows: List[Dict[str, Any]] = []
+            for table in tables:
+                rows.extend(self._extract_txo_option_rows(table))
+            result = calculate_option_skew(rows, spot, days_to_expiry=self.days_to_monthly_expiry())
+            if result.get("skew_pressure") is None and not rows:
+                result["source_note"] = "no TXO option rows parsed"
+            return result
+        except Exception as exc:
+            return {"skew_pressure": None, "skew_signal": "unknown", "source_note": f"unavailable: {exc}"}
+
+    def days_to_monthly_expiry(self) -> int:
+        query_date = datetime.strptime(self.date_str, "%Y%m%d")
+        expiry = third_wednesday(query_date.year, query_date.month)
+        if query_date.date() > expiry.date():
+            next_month = query_date.month + 1 if query_date.month < 12 else 1
+            next_year = query_date.year if query_date.month < 12 else query_date.year + 1
+            expiry = third_wednesday(next_year, next_month)
+        return max((expiry.date() - query_date.date()).days, 1)
+
+    def _extract_txo_option_rows(self, table: pd.DataFrame) -> List[Dict[str, Any]]:
+        rows: List[Dict[str, Any]] = []
+        if table.empty:
+            return rows
+
+        for _, row in table.iterrows():
+            values = [str(value).strip() for value in row.values]
+            side = None
+            if any(value.upper() in {"CALL", "C"} or "買權" in value for value in values):
+                side = "call"
+            elif any(value.upper() in {"PUT", "P"} or "賣權" in value for value in values):
+                side = "put"
+            if side is None:
+                continue
+
+            numbers = [parse_number(value) for value in values]
+            numbers = [value for value in numbers if value is not None]
+            strike_candidates = [value for value in numbers if 1000 <= value <= 100000 and float(value).is_integer()]
+            price_candidates = [value for value in numbers if 0 < value < 5000]
+            if not strike_candidates or not price_candidates:
+                continue
+            strike = strike_candidates[0]
+            price = price_candidates[-1]
+            rows.append({"side": side, "strike": strike, "settlement": price})
+
+        return rows
 
     def fetch_tx_near_month(self) -> Dict[str, Optional[float]]:
         url = f"{TAIFEX_BASE_URL}/cht/3/futDailyMarketReport"
@@ -315,6 +574,7 @@ def format_report_text(payload: Dict[str, Any]) -> str:
     futures = payload.get("futures", {})
     positioning = payload.get("positioning", {})
     options = payload.get("options", {})
+    night = payload.get("night_session", {})
 
     lines = [
         f"# 衍生品風險監控 ({payload.get('date', '-')})",
@@ -337,6 +597,17 @@ def format_report_text(payload: Dict[str, Any]) -> str:
         f"- Put/Call Ratio: {options.get('pc_ratio')}",
         f"- Put/Call Ratio 5日均值: {options.get('pc_ratio_5d_avg')}",
         f"- 選擇權訊號: {options.get('pc_ratio_signal')}",
+        f"- TXO skew pressure: {options.get('skew_pressure')}",
+        f"- TXO skew signal: {options.get('skew_signal')}",
+        f"- TXO ATM call IV: {options.get('atm_call_iv')}",
+        f"- TXO ATM put IV: {options.get('atm_put_iv')}",
+        f"- TXO IV skew: {options.get('iv_skew')}",
+        "",
+        "## 台指夜盤",
+        f"- TXF 夜盤/即時價格: {night.get('txf_last_price')}",
+        f"- TXF 漲跌幅: {night.get('txf_change_pct')}%",
+        f"- TXF 成交量: {night.get('txf_volume')}",
+        f"- 夜盤訊號: {night.get('night_signal')}",
     ]
     return "\n".join(lines) + "\n"
 

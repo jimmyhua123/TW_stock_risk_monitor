@@ -1,7 +1,14 @@
 import unittest
 from pathlib import Path
 
-from src.daily_briefing import DEFAULT_BRIEFING_DIR, build_briefing_markdown, build_coverage_index
+from src.daily_briefing import (
+    DEFAULT_BRIEFING_DIR,
+    build_briefing_markdown,
+    build_coverage_index,
+    format_signal,
+    render_risk_trend_summary,
+    summarize_risk_history,
+)
 
 
 class DailyBriefingTests(unittest.TestCase):
@@ -21,6 +28,30 @@ class DailyBriefingTests(unittest.TestCase):
 
         self.assertIn("2330", index)
         self.assertNotIn("0050", index)
+
+    def test_format_signal_uses_clear_risk_direction_labels(self):
+        self.assertEqual(format_signal("risk_on"), "風險偏低 / 偏多環境")
+        self.assertEqual(format_signal("risk_off"), "風險偏高 / 偏空環境")
+
+    def test_summarize_risk_history_uses_rolling_averages(self):
+        history = [
+            {"date": "20260612", "score": 70, "bias": "risk_off"},
+            {"date": "20260615", "score": 68, "bias": "neutral"},
+            {"date": "20260616", "score": 60, "bias": "neutral"},
+            {"date": "20260617", "score": 72, "bias": "risk_off"},
+            {"date": "20260618", "score": 35, "bias": "risk_on"},
+        ]
+
+        trend = summarize_risk_history(history)
+        lines = render_risk_trend_summary(history)
+        markdown = "\n".join(lines)
+
+        self.assertEqual(trend["current"], 35)
+        self.assertEqual(trend["delta"], -37)
+        self.assertEqual(trend["ma3"], 55.7)
+        self.assertEqual(trend["ma5"], 61.0)
+        self.assertIn("5日風險均值", markdown)
+        self.assertIn("不宜直接解讀成穩定偏多", markdown)
 
     def test_build_briefing_markdown_includes_core_sections(self):
         market = {
@@ -42,8 +73,8 @@ class DailyBriefingTests(unittest.TestCase):
             ],
         }
         derivatives = {
-            "summary": {"risk_score": 75, "bias": "risk_off"},
-            "futures": {"basis": -31.73, "basis_pct": -0.08},
+            "summary": {"risk_score": 90, "bias": "risk_off"},
+            "futures": {"basis": -120.0, "basis_pct": -0.30},
             "positioning": {"foreign_tx_net_open_interest": -47074},
             "options": {"pc_ratio": 171.12, "pc_ratio_5d_avg": 143.08},
         }
@@ -55,12 +86,44 @@ class DailyBriefingTests(unittest.TestCase):
 
         markdown = build_briefing_markdown("20260429", market, derivatives, coverage)
 
-        self.assertIn("# 每日看盤筆記 20260429", markdown)
-        self.assertIn("## 期貨 / 選擇權風險", markdown)
-        self.assertIn("風險偏空", markdown)
-        self.assertIn("台積電", markdown)
-        self.assertIn("AI 伺服器, CoWoS", markdown)
-        self.assertIn("## 權證監控", markdown)
+        self.assertIn("20260429", markdown)
+        self.assertIn("Put/Call Ratio", markdown)
+        self.assertIn("bearish", markdown)
+        self.assertIn("+15", markdown)
+        self.assertIn("90", markdown)
+        self.assertIn("MA5/MA10/MA20", markdown)
+        self.assertIn("SOX", markdown)
+        self.assertIn("Nasdaq", markdown)
+        self.assertIn("2330", markdown)
+        self.assertIn("CoWoS", markdown)
+        self.assertIn("055145", markdown)
+
+    def test_build_briefing_markdown_uses_monthly_global_inputs(self):
+        market = {"蝮質汗": [], "?蝐Ⅳ": []}
+        derivatives = {"summary": {"risk_score": 50}}
+        global_market = {
+            "market_data": {
+                "Americas": [{"ticker": "^IXIC", "change": -2.2}],
+                "Rates_Forex": [{"ticker": "USDTWD=X", "change": 0.5}],
+            }
+        }
+        sector_flow = {
+            "periods": {
+                "6M": {"sectors": [{"ticker": "XLK", "alpha_pct": -7.0}]}
+            }
+        }
+
+        markdown = build_briefing_markdown(
+            "20260429",
+            market,
+            derivatives,
+            global_market_data=global_market,
+            us_sector_flow_data=sector_flow,
+        )
+
+        self.assertIn("Nasdaq", markdown)
+        self.assertIn("USD/TWD", markdown)
+        self.assertIn("US tech sector", markdown)
 
 
 if __name__ == "__main__":

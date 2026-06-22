@@ -1,12 +1,12 @@
 {
   "date": "20260601",
-  "update_time": "2026-06-02 08:54:13",
+  "update_time": "2026-06-22 14:54:20",
   "futures": {
     "tx_near_settlement": 46035,
     "tx_near_change_pct": 1.59,
-    "taiex_spot": 44732.94,
-    "basis": 1302.06,
-    "basis_pct": 2.91,
+    "taiex_spot": 45337.91,
+    "basis": 697.09,
+    "basis_pct": 1.54,
     "basis_signal": "bullish"
   },
   "positioning": {
@@ -17,11 +17,29 @@
   "options": {
     "pc_ratio": 171.12,
     "pc_ratio_5d_avg": 166.32,
-    "pc_ratio_signal": "hedging_pressure"
+    "pc_ratio_signal": "hedging_pressure",
+    "skew_pressure": 0.6812,
+    "skew_signal": "put_skew",
+    "atm_strike": 45350.0,
+    "put_ratio": 0.943,
+    "call_ratio": 0.2618,
+    "atm_call_iv": 0.0481,
+    "atm_put_iv": 0.0625,
+    "otm_call_iv": 0.0171,
+    "otm_put_iv": 0.0654,
+    "iv_skew": 0.0483,
+    "skew_source_note": "TXO near-month option price skew"
+  },
+  "night_session": {
+    "txf_last_price": null,
+    "txf_change_pct": 0,
+    "txf_volume": null,
+    "night_signal": "neutral",
+    "source_note": "mis.taifex MarketType=1"
   },
   "summary": {
-    "risk_score": 65,
-    "bias": "neutral",
+    "risk_score": 71,
+    "bias": "risk_off",
     "signals": [
       {
         "name": "台指期基差",
@@ -34,6 +52,14 @@
       {
         "name": "選擇權 Put/Call Ratio",
         "signal": "hedging_pressure"
+      },
+      {
+        "name": "TXF night session",
+        "signal": "neutral"
+      },
+      {
+        "name": "TXO option skew",
+        "signal": "put_skew"
       }
     ]
   }

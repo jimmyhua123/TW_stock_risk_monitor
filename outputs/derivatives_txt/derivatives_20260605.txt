@@ -18,3 +18,14 @@
 - Put/Call Ratio: 189.66
 - Put/Call Ratio 5日均值: 172.34
 - 選擇權訊號: hedging_pressure
+- TXO skew pressure: -0.1667
+- TXO skew signal: neutral
+- TXO ATM call IV: None
+- TXO ATM put IV: 0.0088
+- TXO IV skew: 0.012
+
+## 台指夜盤
+- TXF 夜盤/即時價格: None
+- TXF 漲跌幅: 0%
+- TXF 成交量: None
+- 夜盤訊號: neutral

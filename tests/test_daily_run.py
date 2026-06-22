@@ -14,6 +14,9 @@ class DailyRunTests(unittest.TestCase):
 
         self.assertIn("台灣風險監控報告", descriptions)
         self.assertIn("期貨與選擇權風險", descriptions)
+        self.assertIn("Market trend metrics", descriptions)
+        self.assertIn("Market breadth metrics", descriptions)
+        self.assertIn("Securities lending metrics", descriptions)
         self.assertIn("Watchlist 族群分析", descriptions)
         self.assertIn("每日看盤筆記", descriptions)
         self.assertNotIn("全球市場與總經數據", descriptions)
@@ -39,9 +42,15 @@ class DailyRunTests(unittest.TestCase):
             (root / "outputs" / "json").mkdir(parents=True)
             (root / "outputs" / "derivatives_json").mkdir(parents=True)
             (root / "outputs" / "coverage_json").mkdir(parents=True)
+            (root / "outputs" / "market_trend_json").mkdir(parents=True)
+            (root / "outputs" / "market_breadth_json").mkdir(parents=True)
+            (root / "outputs" / "securities_lending_json").mkdir(parents=True)
             (root / "outputs" / "json" / "20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "derivatives_json" / "derivatives_20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "coverage_json" / "coverage_20260611.json").write_text("{}", encoding="utf-8")
+            (root / "outputs" / "market_trend_json" / "market_trend_20260611.json").write_text("{}", encoding="utf-8")
+            (root / "outputs" / "market_breadth_json" / "market_breadth_20260611.json").write_text("{}", encoding="utf-8")
+            (root / "outputs" / "securities_lending_json" / "securities_lending_20260611.json").write_text("{}", encoding="utf-8")
 
             descriptions = [
                 description for _, description, _ in build_steps("20260611", project_root=root)
@@ -51,6 +60,9 @@ class DailyRunTests(unittest.TestCase):
         self.assertNotIn("Excel 轉 JSON / TXT", descriptions)
         self.assertNotIn("期貨與選擇權風險", descriptions)
         self.assertNotIn("個股產業與題材補充", descriptions)
+        self.assertNotIn("Market trend metrics", descriptions)
+        self.assertNotIn("Market breadth metrics", descriptions)
+        self.assertNotIn("Securities lending metrics", descriptions)
         self.assertIn("Watchlist 族群分析", descriptions)
         self.assertIn("每日看盤筆記", descriptions)
 
@@ -61,6 +73,13 @@ class DailyRunTests(unittest.TestCase):
 
         self.assertIn("--report", group_cmd)
         self.assertIn("outputs\\json\\risk_report.json", group_cmd)
+
+    def test_daily_briefing_runs_as_package_module(self):
+        with TemporaryDirectory() as temp_dir:
+            steps = build_steps("20260611", project_root=Path(temp_dir))
+        briefing_cmd = next(cmd for _, description, cmd in steps if description == "每日看盤筆記")
+
+        self.assertEqual(["-m", "src.daily_briefing"], briefing_cmd[1:3])
 
 
 if __name__ == "__main__":

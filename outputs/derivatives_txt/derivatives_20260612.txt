@@ -1,7 +1,7 @@
 # 衍生品風險監控 (20260612)
 
 ## 總結
-- 風險分數: 75
+- 風險分數: 72
 - 盤勢傾向: risk_off
 
 ## 期貨
@@ -18,3 +18,14 @@
 - Put/Call Ratio: 168.35
 - Put/Call Ratio 5日均值: 145.62
 - 選擇權訊號: hedging_pressure
+- TXO skew pressure: -0.75
+- TXO skew signal: call_skew
+- TXO ATM call IV: None
+- TXO ATM put IV: 0.0079
+- TXO IV skew: 0.0079
+
+## 台指夜盤
+- TXF 夜盤/即時價格: None
+- TXF 漲跌幅: 0%
+- TXF 成交量: None
+- 夜盤訊號: neutral

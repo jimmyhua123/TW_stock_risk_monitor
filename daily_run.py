@@ -32,6 +32,9 @@ def dated_output_paths(date: str | None, project_root: Path = PROJECT_ROOT) -> d
         "monitor_xlsx": project_root / "outputs" / "monitor_xlsx" / (f"{date}.xlsx" if date else "risk_report.xlsx"),
         "derivatives_json": project_root / "outputs" / "derivatives_json" / f"derivatives_{date}.json" if date else project_root / "outputs" / "derivatives_json",
         "coverage_json": project_root / "outputs" / "coverage_json" / f"coverage_{date}.json" if date else project_root / "outputs" / "coverage_json",
+        "market_trend_json": project_root / "outputs" / "market_trend_json" / f"market_trend_{date}.json" if date else project_root / "outputs" / "market_trend_json",
+        "market_breadth_json": project_root / "outputs" / "market_breadth_json" / f"market_breadth_{date}.json" if date else project_root / "outputs" / "market_breadth_json",
+        "securities_lending_json": project_root / "outputs" / "securities_lending_json" / f"securities_lending_{date}.json" if date else project_root / "outputs" / "securities_lending_json",
     }
 
 
@@ -69,6 +72,21 @@ def build_steps(
         if verbose:
             print(f"[SKIP] 已有衍生品 JSON，略過重抓: {outputs['derivatives_json']}")
 
+    if date and (force_refresh or not outputs["market_trend_json"].is_file()):
+        steps.append(("3a", "Market trend metrics", [PYTHON, "-m", "src.market_trend_monitor", *date_args]))
+    elif date and verbose:
+        print(f"[SKIP] Market trend JSON exists: {outputs['market_trend_json']}")
+
+    if date and (force_refresh or not outputs["market_breadth_json"].is_file()):
+        steps.append(("3b", "Market breadth metrics", [PYTHON, "-m", "src.market_breadth_monitor", *date_args]))
+    elif date and verbose:
+        print(f"[SKIP] Market breadth JSON exists: {outputs['market_breadth_json']}")
+
+    if date and (force_refresh or not outputs["securities_lending_json"].is_file()):
+        steps.append(("3c", "Securities lending metrics", [PYTHON, "-m", "src.securities_lending_monitor", *date_args]))
+    elif date and verbose:
+        print(f"[SKIP] Securities lending JSON exists: {outputs['securities_lending_json']}")
+
     if refresh_coverage or (date and not outputs["coverage_json"].is_file()):
         steps.append(("4", "個股產業與題材補充", [PYTHON, os.path.join("src", "coverage_enrichment.py"), *date_args]))
     elif date:
@@ -81,7 +99,7 @@ def build_steps(
     steps.append(("5", "Watchlist 族群分析", group_cmd))
 
     if date:
-        steps.append(("6", "每日看盤筆記", [PYTHON, os.path.join("src", "daily_briefing.py"), "--date", date]))
+        steps.append(("6", "每日看盤筆記", [PYTHON, "-m", "src.daily_briefing", "--date", date]))
 
     return steps
 

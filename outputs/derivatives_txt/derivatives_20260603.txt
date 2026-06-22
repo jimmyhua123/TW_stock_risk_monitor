@@ -1,13 +1,13 @@
 # 衍生品風險監控 (20260603)
 
 ## 總結
-- 風險分數: 65
+- 風險分數: 62
 - 盤勢傾向: neutral
 
 ## 期貨
 - 台指期近月結算價: 46868
-- 加權指數現貨: 45557.31
-- 期現基差: 1310.69 (2.88%)
+- 加權指數現貨: 46459.16
+- 期現基差: 408.84 (0.88%)
 - 基差訊號: bullish
 
 ## 法人期貨部位
@@ -18,3 +18,14 @@
 - Put/Call Ratio: 217.69
 - Put/Call Ratio 5日均值: 176.36
 - 選擇權訊號: hedging_pressure
+- TXO skew pressure: -0.9714
+- TXO skew signal: call_skew
+- TXO ATM call IV: None
+- TXO ATM put IV: 0.0042
+- TXO IV skew: 0.0031
+
+## 台指夜盤
+- TXF 夜盤/即時價格: None
+- TXF 漲跌幅: 0%
+- TXF 成交量: None
+- 夜盤訊號: neutral

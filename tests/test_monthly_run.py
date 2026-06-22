@@ -17,6 +17,14 @@ class MonthlyRunTests(unittest.TestCase):
 
         self.assertIn("美股產業資金流報告", descriptions)
 
+    def test_monthly_sector_flow_runs_structured_json_monitor(self):
+        steps = build_steps("20260612", include_sector_flow=True)
+        sector_cmd = next(cmd for _, description, cmd in steps if description == "美股產業資金流報告")
+
+        self.assertEqual(["-m", "src.us_sector_flow_monitor"], sector_cmd[1:3])
+        self.assertIn("--date", sector_cmd)
+        self.assertIn("20260612", sector_cmd)
+
     def test_monthly_run_passes_date_to_date_aware_jobs(self):
         steps = build_steps("20260612")
 

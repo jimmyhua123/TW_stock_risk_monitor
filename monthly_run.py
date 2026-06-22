@@ -35,7 +35,7 @@ def build_steps(date: str | None, *, include_sector_flow: bool = False) -> list[
     ]
 
     if include_sector_flow:
-        steps.append(("4", "美股產業資金流報告", [PYTHON, os.path.join("src", "us_sector_funds_flow.py")]))
+        steps.append(("4", "美股產業資金流報告", [PYTHON, "-m", "src.us_sector_flow_monitor", *date_args]))
 
     return steps
 
