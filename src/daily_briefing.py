@@ -101,6 +101,9 @@ def expanded_summary_for_date(date: str) -> dict[str, Any] | None:
     lending_path = exact_data_file(
         PROJECT_ROOT / "outputs" / "securities_lending_json", date, "securities_lending_{date}.json"
     )
+    rotation_path = exact_data_file(
+        PROJECT_ROOT / "outputs" / "defensive_rotation_json", date, "defensive_rotation_{date}.json"
+    )
     global_path = data_file_on_or_before(PROJECT_ROOT / "outputs" / "global_json", date, "global_market_{date}.json")
     sector_flow_path = data_file_on_or_before(
         PROJECT_ROOT / "outputs" / "us_sector_flow_json", date, "us_sector_flow_{date}.json"
@@ -114,6 +117,7 @@ def expanded_summary_for_date(date: str) -> dict[str, Any] | None:
         load_json(global_path) if global_path else {},
         load_json(sector_flow_path) if sector_flow_path else {},
         load_json(lending_path) if lending_path else {},
+        load_json(rotation_path) if rotation_path else {},
     )
 
 
@@ -174,6 +178,7 @@ def build_briefing_markdown(
     us_sector_flow_data: dict[str, Any] | None = None,
     securities_lending_data: dict[str, Any] | None = None,
     risk_history: list[dict[str, Any]] | None = None,
+    defensive_rotation_data: dict[str, Any] | None = None,
 ) -> str:
     derivatives_data = derivatives_data or {}
     coverage_index = build_coverage_index(coverage_data or {})
@@ -195,6 +200,7 @@ def build_briefing_markdown(
             us_sector_flow_data,
             securities_lending_data,
             risk_history,
+            defensive_rotation_data,
         )
     )
     lines.extend(render_stock_table(market_data.get("個股籌碼", []), coverage_index))
@@ -227,6 +233,7 @@ def render_derivatives(
     us_sector_flow_data: dict[str, Any] | None = None,
     securities_lending_data: dict[str, Any] | None = None,
     risk_history: list[dict[str, Any]] | None = None,
+    defensive_rotation_data: dict[str, Any] | None = None,
 ) -> list[str]:
     summary = data.get("summary", {})
     futures = data.get("futures", {})
@@ -259,6 +266,7 @@ def render_derivatives(
                 us_sector_flow_data,
                 securities_lending_data,
                 risk_history,
+                defensive_rotation_data,
             )
         )
     lines.extend(render_practical_expansion_criteria())
@@ -274,6 +282,7 @@ def render_expanded_risk_score(
     us_sector_flow_data: dict[str, Any] | None = None,
     securities_lending_data: dict[str, Any] | None = None,
     risk_history: list[dict[str, Any]] | None = None,
+    defensive_rotation_data: dict[str, Any] | None = None,
 ) -> list[str]:
     summary = expanded_risk_summary(
         market_data,
@@ -283,6 +292,7 @@ def render_expanded_risk_score(
         global_market_data,
         us_sector_flow_data,
         securities_lending_data,
+        defensive_rotation_data or {},
     )
     lines = [
         "### 擴充後風險分數",
@@ -581,6 +591,9 @@ def write_briefing(date: str, output_path: Path | None = None) -> Path:
     lending_path = data_file_for_date(
         PROJECT_ROOT / "outputs" / "securities_lending_json", date, "securities_lending_{date}.json"
     )
+    rotation_path = data_file_for_date(
+        PROJECT_ROOT / "outputs" / "defensive_rotation_json", date, "defensive_rotation_{date}.json"
+    )
 
     market_data = load_json(market_path)
     derivatives_data = load_json(derivatives_path) if derivatives_path else {}
@@ -590,6 +603,7 @@ def write_briefing(date: str, output_path: Path | None = None) -> Path:
     global_market_data = load_json(global_path) if global_path else {}
     us_sector_flow_data = load_json(sector_flow_path) if sector_flow_path else {}
     securities_lending_data = load_json(lending_path) if lending_path else {}
+    defensive_rotation_data = load_json(rotation_path) if rotation_path else {}
     risk_history = build_risk_history(date)
 
     markdown = build_briefing_markdown(
@@ -603,6 +617,7 @@ def write_briefing(date: str, output_path: Path | None = None) -> Path:
         us_sector_flow_data,
         securities_lending_data,
         risk_history,
+        defensive_rotation_data,
     )
     output_path = output_path or DEFAULT_BRIEFING_DIR / f"{date}.md"
     output_path.parent.mkdir(parents=True, exist_ok=True)

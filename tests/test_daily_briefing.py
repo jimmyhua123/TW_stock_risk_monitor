@@ -125,6 +125,45 @@ class DailyBriefingTests(unittest.TestCase):
         self.assertIn("USD/TWD", markdown)
         self.assertIn("US tech sector", markdown)
 
+    def test_build_briefing_markdown_includes_defensive_rotation_factor(self):
+        markdown = build_briefing_markdown(
+            "20260624",
+            {"overview": [], "stocks": []},
+            {"summary": {"risk_score": 50}},
+            defensive_rotation_data={
+                "taiwan": {"signal": "downtrend_risk"},
+                "us": {"signal": "neutral"},
+                "summary": {"signal": "elevated_downtrend_risk"},
+            },
+        )
+
+        self.assertIn("Taiwan defensive rotation", markdown)
+
+    def test_build_briefing_marks_non_risk_rotation_as_zero_points(self):
+        markdown = build_briefing_markdown(
+            "20260624",
+            {"overview": [], "stocks": []},
+            {"summary": {"risk_score": 50}},
+            defensive_rotation_data={
+                "taiwan": {"signal": "healthy_rotation"},
+                "us": {"signal": "usd_defense"},
+                "summary": {"signal": "neutral"},
+            },
+        )
+
+        self.assertIn("Taiwan defensive rotation: 0", markdown)
+        self.assertIn("Swiss defensive rotation: 0", markdown)
+
+    def test_build_briefing_shows_zero_point_rotation_status_without_data(self):
+        markdown = build_briefing_markdown(
+            "20260624",
+            {"overview": [], "stocks": []},
+            {"summary": {"risk_score": 50}},
+        )
+
+        self.assertIn("Taiwan defensive rotation: 0", markdown)
+        self.assertIn("Swiss defensive rotation: 0", markdown)
+
 
 if __name__ == "__main__":
     unittest.main()

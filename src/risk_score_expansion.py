@@ -53,6 +53,7 @@ def expanded_risk_summary(
     global_market_data: dict[str, Any] | None = None,
     us_sector_flow_data: dict[str, Any] | None = None,
     securities_lending_data: dict[str, Any] | None = None,
+    defensive_rotation_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return base score plus bounded adjustments from available raw data."""
     base_score = to_float(derivatives_data.get("summary", {}).get("risk_score"))
@@ -80,6 +81,8 @@ def expanded_risk_summary(
     factors.extend(score_derivatives_expansion_data(derivatives_data))
     if securities_lending_data:
         factors.extend(score_securities_lending_data(securities_lending_data))
+    if defensive_rotation_data is not None:
+        factors.extend(score_defensive_rotation_data(defensive_rotation_data))
 
     raw_adjustment = sum(factor["points"] for factor in factors)
     adjustment = int(clamp(raw_adjustment, -20, 20))
@@ -220,6 +223,36 @@ def score_us_sector_flow_data(data: dict[str, Any]) -> list[dict[str, Any]]:
             factors.append(factor(label, -3, f"{item.get('ticker')} 近 6 個月領先 SPY {alpha:.2f}%，代表美股相關族群仍有領導力，對台股科技鏈是外部支撐，所以扣分。"))
 
     return factors
+
+
+def score_defensive_rotation_data(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Add bounded risk only for defensive rotation confirmed by weak benchmarks."""
+    taiwan_signal = data.get("taiwan", {}).get("signal")
+    us_signal = data.get("us", {}).get("signal")
+
+    if taiwan_signal == "downtrend_risk":
+        taiwan = factor("Taiwan defensive rotation", 3, "Financials are outperforming while TAIEX is below its trend average.")
+    elif taiwan_signal == "broad_risk_off":
+        taiwan = factor("Taiwan defensive rotation", 4, "TAIEX and the financial proxy are both weak, confirming broad selling pressure.")
+    elif taiwan_signal == "healthy_rotation":
+        taiwan = factor("Taiwan defensive rotation", 0, "Financials are relatively strong, but TAIEX has not confirmed a weak trend (healthy rotation).")
+    elif taiwan_signal == "neutral":
+        taiwan = factor("Taiwan defensive rotation", 0, "No meaningful financial-sector defensive rotation is present.")
+    else:
+        taiwan = factor("Taiwan defensive rotation", 0, "Signal unavailable; no risk-score adjustment.")
+
+    if us_signal == "downtrend_risk":
+        swiss = factor("Swiss defensive rotation", 3, "EWL is outperforming SPY while SPY is below its trend average.")
+    elif us_signal == "usd_defense":
+        swiss = factor("Swiss defensive rotation", 0, "EWL relative strength is discounted because DXY indicates a strong-US-dollar regime.")
+    elif us_signal == "defensive_rotation":
+        swiss = factor("Swiss defensive rotation", 0, "EWL is relatively strong, but SPY has not confirmed a weak trend.")
+    elif us_signal == "neutral":
+        swiss = factor("Swiss defensive rotation", 0, "No meaningful Swiss defensive rotation is present.")
+    else:
+        swiss = factor("Swiss defensive rotation", 0, "Signal unavailable; no risk-score adjustment.")
+
+    return [taiwan, swiss]
 
 
 def score_market_trend_data(data: dict[str, Any]) -> list[dict[str, Any]]:

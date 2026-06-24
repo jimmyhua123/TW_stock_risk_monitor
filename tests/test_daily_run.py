@@ -17,6 +17,7 @@ class DailyRunTests(unittest.TestCase):
         self.assertIn("Market trend metrics", descriptions)
         self.assertIn("Market breadth metrics", descriptions)
         self.assertIn("Securities lending metrics", descriptions)
+        self.assertIn("Defensive rotation metrics", descriptions)
         self.assertIn("Watchlist 族群分析", descriptions)
         self.assertIn("每日看盤筆記", descriptions)
         self.assertNotIn("全球市場與總經數據", descriptions)
@@ -45,12 +46,14 @@ class DailyRunTests(unittest.TestCase):
             (root / "outputs" / "market_trend_json").mkdir(parents=True)
             (root / "outputs" / "market_breadth_json").mkdir(parents=True)
             (root / "outputs" / "securities_lending_json").mkdir(parents=True)
+            (root / "outputs" / "defensive_rotation_json").mkdir(parents=True)
             (root / "outputs" / "json" / "20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "derivatives_json" / "derivatives_20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "coverage_json" / "coverage_20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "market_trend_json" / "market_trend_20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "market_breadth_json" / "market_breadth_20260611.json").write_text("{}", encoding="utf-8")
             (root / "outputs" / "securities_lending_json" / "securities_lending_20260611.json").write_text("{}", encoding="utf-8")
+            (root / "outputs" / "defensive_rotation_json" / "defensive_rotation_20260611.json").write_text("{}", encoding="utf-8")
 
             descriptions = [
                 description for _, description, _ in build_steps("20260611", project_root=root)
@@ -63,6 +66,7 @@ class DailyRunTests(unittest.TestCase):
         self.assertNotIn("Market trend metrics", descriptions)
         self.assertNotIn("Market breadth metrics", descriptions)
         self.assertNotIn("Securities lending metrics", descriptions)
+        self.assertNotIn("Defensive rotation metrics", descriptions)
         self.assertIn("Watchlist 族群分析", descriptions)
         self.assertIn("每日看盤筆記", descriptions)
 

@@ -172,5 +172,22 @@ class RiskScoreExpansionTests(unittest.TestCase):
         self.assertIn("Watchlist lending pressure", names)
 
 
+    def test_defensive_rotation_adds_risk_only_when_benchmarks_are_weak(self):
+        market = {"overview": [], "stocks": []}
+        derivatives = {"summary": {"risk_score": 50}}
+        rotation = {
+            "taiwan": {"signal": "downtrend_risk"},
+            "us": {"signal": "usd_defense"},
+            "summary": {"signal": "elevated_downtrend_risk"},
+        }
+
+        summary = expanded_risk_summary(market, derivatives, defensive_rotation_data=rotation)
+
+        self.assertGreater(summary["expanded_score"], 50)
+        self.assertIn("Taiwan defensive rotation", [factor["name"] for factor in summary["factors"]])
+        swiss = next(factor for factor in summary["factors"] if factor["name"] == "Swiss defensive rotation")
+        self.assertEqual(swiss["points"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
