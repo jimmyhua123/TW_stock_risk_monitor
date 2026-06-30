@@ -12,37 +12,33 @@
 pip install -r requirements.txt
 ```
 
-2. 產生指定日期的完整報告：
-
-```bash
-python run_all.py --date 20260612
-```
-
-3. 每日看盤建議使用較輕量的日更流程：
+2. 每日看盤主要流程（推薦 ⭐）：
 
 ```bash
 python daily_run.py --date 20260616
 ```
 
-4. 低頻或月底更新較重資料：
+`daily_run.py` 會產出台股風險報表、衍生品、市場趨勢／廣度／借券／防禦性輪動指標、watchlist 族群分析與每日 briefing，並會優先使用既有輸出避免重複打 API。
+
+3. 低頻或月底更新較重資料：
 
 ```bash
 python monthly_run.py --date 20260612
 ```
 
-5. 盤中即時觀察 watchlist 漲跌：
+4. 盤中即時觀察 watchlist 漲跌：
 
 ```bash
 python src/intraday_monitor.py
 ```
 
-6. 只產生 watchlist 族群分析：
+5. 只產生 watchlist 族群分析：
 
 ```bash
 python src/group_monitor.py --date 20260611
 ```
 
-7. 開啟 Web Dashboard：
+6. 開啟 Web Dashboard：
 
 ```bash
 python web/server.py
@@ -101,8 +97,7 @@ data/config/watchlist.example.json
 
 | 命令 | 用途 |
 | --- | --- |
-| `python run_all.py --date YYYYMMDD` | 一鍵產出主要報告、JSON/TXT、族群分析與補充資料 |
-| `python daily_run.py --date YYYYMMDD` | 每日看盤常用流程，略過不一定需要日更的全球市場、股期換月與題材補充 |
+| `python daily_run.py --date YYYYMMDD` | 每日看盤主要流程：台股報表、衍生品、市場趨勢／廣度／借券／防禦性輪動、族群分析與每日 briefing |
 | `python daily_run.py --date YYYYMMDD --refresh-coverage` | 每日流程加上題材補充刷新；新增 watchlist 股票或想更新自動 groups 時使用 |
 | `python daily_run.py --date YYYYMMDD --force-refresh` | 即使當日 JSON 已存在，也重新抓取日更資料 |
 | `python monthly_run.py --date YYYYMMDD` | 低頻/月度刷新全球市場、題材補充與股期換月 |
@@ -111,9 +106,14 @@ data/config/watchlist.example.json
 | `python main.py --date YYYYMMDD --output YYYYMMDD.xlsx` | 產出台股風險 Excel |
 | `python src/excel_to_json.py outputs/monitor_xlsx/YYYYMMDD.xlsx` | 將 Excel 轉成 JSON/TXT |
 | `python src/group_monitor.py --date YYYYMMDD` | 依 watchlist 產生族群分析 |
+| `python -m src.market_trend_monitor --date YYYYMMDD` | 產生市場趨勢指標 |
+| `python -m src.market_breadth_monitor --date YYYYMMDD` | 產生市場廣度指標 |
+| `python -m src.securities_lending_monitor --date YYYYMMDD` | 產生借券賣出指標 |
+| `python -m src.defensive_rotation_monitor --date YYYYMMDD` | 產生防禦性輪動指標 |
 | `python src/global_market_monitor.py --date YYYYMMDD` | 產生全球市場與總經資料 |
 | `python src/derivatives_monitor.py --date YYYYMMDD` | 產生期貨與選擇權風險資料 |
 | `python src/coverage_enrichment.py --date YYYYMMDD` | 產生題材與產業補充 |
+| `python src/daily_briefing.py --date YYYYMMDD` | 產生每日結構化看盤 briefing |
 | `python web/server.py` | 啟動本機 Dashboard |
 | `python -m unittest discover -v` | 跑單元測試 |
 
@@ -126,9 +126,14 @@ data/config/watchlist.example.json
 | `outputs/txt/` | 台股風險文字稿 |
 | `outputs/group_json/` | watchlist 族群分析 JSON |
 | `outputs/group_txt/` | watchlist 族群分析文字報告 |
+| `outputs/market_trend_json/` | 市場趨勢指標 JSON |
+| `outputs/market_breadth_json/` | 市場廣度指標 JSON |
+| `outputs/securities_lending_json/` | 借券賣出指標 JSON |
+| `outputs/defensive_rotation_json/` | 防禦性輪動指標 JSON |
 | `outputs/global_json/` | 全球市場 JSON |
 | `outputs/derivatives_json/` | 期貨選擇權 JSON |
 | `outputs/coverage_json/` | 題材補充 JSON |
+| `outputs/rollover_json/` | 股期換月轉倉價差 JSON |
 | `docs/notes/每日看盤筆記/` | `daily_briefing.py` 產出的每日結構化 briefing |
 | `docs/notes/看盤筆記/` | 你原本的即時盤中漲跌幅與手動看盤筆記 |
 

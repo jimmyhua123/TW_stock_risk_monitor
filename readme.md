@@ -53,14 +53,17 @@
 
 ## 🛠️ 使用方式
 
-### 0. 一鍵執行所有報告 (推薦 ⭐)
+> 完整使用說明與命令列表請見 [PROJECT_GUIDE.md](PROJECT_GUIDE.md)（單一真相來源）。以下為快速入口。
+
+### 0. 每日看盤主要流程 (推薦 ⭐)
 ```bash
 # 生成今日報告
-python run_all.py
+python daily_run.py
 
 # 生成指定日期報告
-python run_all.py --date 20260424
+python daily_run.py --date 20260424
 ```
+一次產出台股風險報表、衍生品、市場趨勢／廣度／借券／防禦性輪動指標、watchlist 族群分析與每日 briefing。低頻/月度較重資料用 `python monthly_run.py`。
 
 ### 1. 整合風險報告 (Excel)
 生成包含大盤、歷史統計與個股籌碼的完整 Excel 報表。

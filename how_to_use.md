@@ -18,15 +18,18 @@
 cd TW_stock_risk_monitor
 ```
 
-### 0. 一鍵執行所有報告 (run_all.py) ⭐ 推薦
-一次產出台灣風險報告 + JSON/TXT + 全球市場與總經數據，統一指定日期：
+> 完整使用說明與命令列表請見 [PROJECT_GUIDE.md](PROJECT_GUIDE.md)（單一真相來源）。本檔僅保留各模組的獨立執行範例。
+
+### 0. 每日看盤主要流程 (daily_run.py) ⭐ 推薦
+一次產出台股風險報表、衍生品、市場趨勢／廣度／借券／防禦性輪動指標、watchlist 族群分析與每日 briefing；會優先使用既有輸出避免重複打 API：
 ```bash
 # 使用今天的交易日
-python run_all.py
+python daily_run.py
 
 # 指定日期
-python run_all.py --date 20260611
+python daily_run.py --date 20260611
 ```
+低頻/月度較重資料（全球市場、題材補充、股期換月）改用 `python monthly_run.py`。
 
 ### 1. 整合風險報告（推薦）
 一鍵生成包含大盤、歷史統計與個股籌碼的完整 Excel 報告。
