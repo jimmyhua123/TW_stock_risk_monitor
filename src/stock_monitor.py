@@ -277,6 +277,19 @@ class StockDataFetcher:
                             except:
                                 return 0
                         
+                        # TWSE MI_MARGN 融券欄位以「股」(units) 回傳，需除以 1000 轉為「張」
+                        # 融資欄位已是千股（=張），無需換算
+                        raw_short_bal = parse_int(row[12])
+                        raw_prev_short = parse_int(row[7]) if row[7] != '--' else None
+                        raw_short_change = (raw_short_bal - raw_prev_short) if raw_prev_short is not None else 0
+                        # 偵測單位：若餘額 > 200_000（超過任何個股合理融券張數），視為以株計，除以 1000
+                        if raw_short_bal > 200_000:
+                            short_balance = raw_short_bal // 1000
+                            short_change = raw_short_change // 1000
+                        else:
+                            short_balance = raw_short_bal
+                            short_change = raw_short_change
+
                         result[code] = {
                             'margin_buy': parse_int(row[2]),
                             'margin_sell': parse_int(row[3]),
@@ -284,8 +297,8 @@ class StockDataFetcher:
                             'margin_change': parse_int(row[6]) - parse_int(row[1]) if row[1] != '--' else 0,
                             'short_sell': parse_int(row[8]),
                             'short_buy': parse_int(row[9]),
-                            'short_balance': parse_int(row[12]),
-                            'short_change': parse_int(row[12]) - parse_int(row[7]) if row[7] != '--' else 0,
+                            'short_balance': short_balance,
+                            'short_change': short_change,
                         }
             
             self._margin_cache = result
@@ -339,10 +352,10 @@ class StockDataFetcher:
                             'margin_sell': parse_int(row[4]) if len(row) > 4 else 0,
                             'margin_balance': parse_int(row[6]) if len(row) > 6 else 0,
                             'margin_change': parse_int(row[6]) - parse_int(row[2]) if len(row) > 6 else 0,
-                            'short_sell': 0,
-                            'short_buy': 0,
-                            'short_balance': 0,
-                            'short_change': 0,
+                            'short_sell': None,
+                            'short_buy': None,
+                            'short_balance': None,
+                            'short_change': None,  # TPEx 融券資料欄位不完整，無法計算
                         }
             
             return result
@@ -922,6 +935,45 @@ class StockMonitor:
             
         print("\n[SUCCESS] 個股籌碼資料抓取完成！\n")
     
+    def _compute_ma20_from_stored_json(self) -> Dict[str, Optional[float]]:
+        """從 outputs/json/ 已存檔 JSON 計算個股 20 日均價（不額外打 API）。"""
+        import glob
+        json_dir = os.path.join('outputs', 'json')
+        pattern = os.path.join(json_dir, '????????.json')
+        today_file = os.path.join(json_dir, f'{self.date_str}.json')
+        # 取最近 25 份檔（預留假日緩衝），排除今日（今日可能尚未完成）
+        all_files = sorted(f for f in glob.glob(pattern) if os.path.basename(f) != f'{self.date_str}.json')
+        recent_files = all_files[-25:]
+
+        prices_by_code: Dict[str, List[float]] = {}
+        for fpath in reversed(recent_files):  # 最新到最舊
+            try:
+                with open(fpath, encoding='utf-8') as fp:
+                    data = json.load(fp)
+                for s in data.get('個股籌碼', []):
+                    code = str(s.get('股票代號', s.get('代號', '')))
+                    close = s.get('收盤價')
+                    if close is not None and float(close) > 0:
+                        if code not in prices_by_code:
+                            prices_by_code[code] = []
+                        prices_by_code[code].append(float(close))
+            except Exception:
+                continue
+
+        result: Dict[str, Optional[float]] = {}
+        for stock in self.watchlist:
+            code = str(stock['code'])
+            closes = prices_by_code.get(code, [])
+            if len(closes) >= 20:
+                result[code] = round(sum(closes[:20]) / 20, 2)
+            elif len(closes) >= 5:
+                # 歷史資料不足 20 天時退而求其次，用現有資料，並標記
+                result[code] = round(sum(closes) / len(closes), 2)
+                print(f"    [MA20] {code} 僅有 {len(closes)} 天歷史，MA 為 {len(closes)} 日均價")
+            else:
+                result[code] = None
+        return result
+
     def _fetch_5d_history(self) -> Dict[str, Dict[str, Any]]:
         """抓取過去 5 天資料計算累計"""
         result = {}
@@ -973,48 +1025,44 @@ class StockMonitor:
             
             time.sleep(2.0)  # 避免請求太頻繁 (TWSE API 限制)
         
+        # MA20：從已存 JSON 讀取，不額外打 API
+        ma20_by_code = self._compute_ma20_from_stored_json()
+
         # 計算累計值
         for stock in self.watchlist:
             code = stock['code']
-            
+
             # 三大法人 5 日累計
             foreign_5d = 0
             trust_5d = 0
             dealer_5d = 0
-            
+
             if code in history_institutional:
                 for data in history_institutional[code]:
                     foreign_5d += data.get('foreign_net', 0) / 1000  # 轉張
                     trust_5d += data.get('trust_net', 0) / 1000
                     dealer_5d += data.get('dealer_net', 0) / 1000
-            
+
             # 融資 5 日累計
             margin_5d = 0
             if code in history_margin:
                 for data in history_margin[code]:
                     margin_5d += data.get('margin_change', 0)
-            
-            # 計算 MA20 和 5 日成交量
-            ma20 = None
+
+            # 5 日成交量總和
             volume_5d = 0
-            if code in history_prices and len(history_prices[code]) >= 5:
-                # 需要更多歷史資料來計算 MA20，這裡先簡化
-                price_list = [p['close'] for p in history_prices[code] if p['close']]
-                if len(price_list) >= 5:
-                    ma20 = sum(price_list) / len(price_list)  # 簡化計算
-                
-                # 5 日成交量總和
+            if code in history_prices:
                 volume_5d = sum(p.get('volume', 0) for p in history_prices[code])
-            
+
             result[code] = {
                 'foreign_5d_sum': round(foreign_5d, 0),
                 'trust_5d_sum': round(trust_5d, 0),
                 'dealer_5d_sum': round(dealer_5d, 0),
                 'margin_5d_sum': round(margin_5d, 0),
-                'ma20': ma20,
+                'ma20': ma20_by_code.get(str(code)),
                 'volume_5d': volume_5d,
             }
-        
+
         return result
     
     def display(self):
@@ -1078,9 +1126,9 @@ class StockMonitor:
         headers = [
             '股票代號', '股票名稱', '市場別', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)'
+            '融資增減(張)', '融資5日累計', '融券增減(張)', 'MA20乖離(%)'
         ]
-        
+
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
         header_font = Font(bold=True, color="FFFFFF")
         
@@ -1154,7 +1202,7 @@ class StockMonitor:
                 '自營商當日(張)': data.get('dealer_daily'),
                 '融資增減(張)': data.get('margin_daily_change'),
                 '融資5日累計': data.get('margin_5d_sum'),
-                '借券增減(張)': data.get('lending_daily_change'),
+                '融券增減(張)': data.get('lending_daily_change'),
                 'MA20乖離(%)': data.get('dist_ma20'),
             })
         

@@ -5,7 +5,10 @@
 整合單日數據、歷史統計與個股籌碼監控，輸出 Excel 報表
 """
 
+import glob
+import json
 import os
+import re
 import argparse
 from datetime import datetime, timedelta
 from openpyxl import Workbook
@@ -126,6 +129,41 @@ class IntegratedRiskReport:
         wb.save(output_path)
         print(f"[SUCCESS] Excel 報表已儲存至: {output_path}\n")
     
+    def _load_5d_market_stats(self) -> dict:
+        """從 outputs/json/ 讀取前 5 個交易日的 總覽 數值，計算 5 日均值供大盤指標使用。"""
+        json_dir = os.path.join('outputs', 'json')
+        today_fname = f'{self.date_str}.json'
+        all_files = sorted(
+            f for f in glob.glob(os.path.join(json_dir, '????????.json'))
+            if os.path.basename(f) != today_fname
+        )
+        recent_files = all_files[-5:]
+
+        values_by_name: dict = {}
+        for fpath in recent_files:
+            try:
+                with open(fpath, encoding='utf-8') as fp:
+                    data = json.load(fp)
+                for item in data.get('總覽', []):
+                    name = item.get('指標', '')
+                    val_raw = str(item.get('當日數值') or '')
+                    # 去除單位字元，保留數字、小數點、正負號
+                    val_str = re.sub(r'[^\d.\-+]', '', val_raw)
+                    if val_str:
+                        try:
+                            val = float(val_str)
+                            values_by_name.setdefault(name, []).append(val)
+                        except ValueError:
+                            pass
+            except Exception:
+                continue
+
+        stats: dict = {}
+        for name, vals in values_by_name.items():
+            if vals:
+                stats[name] = round(sum(vals) / len(vals), 2)
+        return stats
+
     def _create_summary_sheet(self, ws):
         """創建總覽工作表"""
         # 標題
@@ -142,6 +180,9 @@ class IntegratedRiskReport:
             cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
+        # 大盤指標 5 日均值（從既存 JSON 讀取，零 API 成本）
+        market_5d = self._load_5d_market_stats()
+
         # 填入數據
         row = 4
         for indicator in self.single_day_data.get('indicators', []):
@@ -149,14 +190,14 @@ class IntegratedRiskReport:
             value = indicator['value']
             change = indicator['change']
             unit = indicator['unit']
-            
+
             # 當日數值
             value_str = f"{value}{unit}" if value is not None else "N/A"
             change_str = f"{change:+.2f}%" if change is not None else ""
-            
+
             # 歷史統計（根據指標類型）
             stats_5d_avg, stats_5d_sum, stats_20d_avg, stats_20d_sum = "", "", "", ""
-            
+
             if name == '外資現貨':
                 stats_5d_avg = f"{self.history_data['institutional'].get('foreign_5d_avg', '-')}億"
                 stats_5d_sum = f"{self.history_data['institutional'].get('foreign_5d_sum', '-')}億"
@@ -174,6 +215,10 @@ class IntegratedRiskReport:
                 stats_5d_avg = f"{self.history_data['pc_ratio'].get('pc_5d_avg', '-')}%"
             elif name == '外資期貨未平倉':
                 stats_5d_avg = f"{self.history_data['futures'].get('futures_5d_avg', '-')}口"
+            elif name in market_5d:
+                # 大盤技術指標：5 日均值（均價類型，加回單位字串）
+                avg_val = market_5d[name]
+                stats_5d_avg = f"{avg_val}{unit}" if unit else str(avg_val)
             
             # 寫入行
             ws.cell(row, 1, indicator['category'])
@@ -276,7 +321,7 @@ class IntegratedRiskReport:
         headers = [
             '股票代號', '股票名稱', '市場別', '收盤價', '漲跌幅(%)', '成交量(張)',
             '外資當日(張)', '外資5日累計', '投信當日(張)', '投信5日累計', '自營商當日(張)',
-            '融資增減(張)', '融資5日累計', '借券增減(張)', 'MA20乖離(%)',
+            '融資增減(張)', '融資5日累計', '融券增減(張)', 'MA20乖離(%)',
             '買賣券商差', '籌碼集中度5D(%)', '借券賣出餘額', '短回補天數', 'VWAP20D', 'VWAP乖離(%)', '資料來源'
         ]
         
